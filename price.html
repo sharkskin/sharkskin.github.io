@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>浙江带量采购 · 市场价格分布分析</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#0f1923;color:#e0e8f0;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a2a3a 0%,#0f1923 50%,#1a2535 100%);padding:40px 60px;border-bottom:1px solid rgba(255,255,255,.08)}
+.header h1{font-size:28px;font-weight:700;letter-spacing:2px;background:linear-gradient(90deg,#4fc3f7,#81d4fa,#b3e5fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .sub{font-size:14px;color:#7a9bb5;margin-top:8px;letter-spacing:1px}
+.container{max-width:1440px;margin:0 auto;padding:30px 40px}
+.row{display:flex;gap:24px;margin-bottom:24px}
+.col{flex:1}
+.card{background:linear-gradient(145deg,#1a2a3a,#162232);border:1px solid rgba(79,195,247,.12);border-radius:12px;padding:24px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4fc3f7,transparent)}
+.card-title{font-size:16px;font-weight:600;color:#81d4fa;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title .dot{width:8px;height:8px;border-radius:50%;background:#4fc3f7;box-shadow:0 0 8px #4fc3f7}
+.chart-box{width:100%;height:420px}
+.chart-box-tall{height:500px}
+.chart-box-short{height:320px}
+.chart-box-cat{height:340px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:linear-gradient(145deg,#1a2a3a,#162232);border:1px solid rgba(79,195,247,.1);border-radius:10px;padding:20px;text-align:center;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#4fc3f7,#81d4fa)}
+.stat-card .label{font-size:12px;color:#7a9bb5;margin-bottom:8px;letter-spacing:1px}
+.stat-card .value{font-size:24px;font-weight:700;color:#e0f7fa}
+.stat-card .unit{font-size:12px;color:#5a8aa5;margin-top:4px}
+.table-wrap{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#1a3045;color:#81d4fa;padding:10px 12px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:2px solid rgba(79,195,247,.2)}
+td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+tr:hover td{background:rgba(79,195,247,.05)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-low{background:rgba(76,175,80,.15);color:#81c784}
+.tag-mid{background:rgba(255,183,77,.15);color:#ffb74d}
+.tag-high{background:rgba(229,57,53,.15);color:#ef5350}
+.insight{background:rgba(79,195,247,.06);border-left:3px solid #4fc3f7;padding:14px 18px;margin-top:16px;border-radius:0 8px 8px 0;font-size:13px;line-height:1.8;color:#a0c4d8}
+.insight strong{color:#81d4fa}
+.footer{text-align:center;padding:30px;color:#4a6a80;font-size:12px;border-top:1px solid rgba(255,255,255,.05);margin-top:20px}
+.section-divider{display:flex;align-items:center;gap:16px;margin:36px 0 24px}
+.section-divider .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(255,193,7,.3),transparent)}
+.section-divider h2{font-size:20px;font-weight:700;color:#ffc107;white-space:nowrap;text-shadow:0 0 20px rgba(255,193,7,.3)}
+.section-divider .line-l{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,193,7,.3))}
+.legend-bar{display:flex;align-items:center;gap:20px;justify-content:center;margin-bottom:20px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:13px;color:#a0c4d8}
+.legend-swatch{width:16px;height:16px;border-radius:3px}
+.legend-swatch.boke{background:#ffc107;box-shadow:0 0 10px rgba(255,193,7,.6);border:2px solid #ffca28}
+.legend-swatch.other{border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>浙江省带量采购 · 心脏植入式医疗器械价格分布分析</h1>
+  <div class="sub">数据来源：浙江带量采购最终价格 2026年4月 &nbsp;|&nbsp; 涵盖 5 大品类 · 4 大进口品牌 · 201 个型号</div>
+</div>
+
+<div class="container">
+  <!-- 汇总统计卡片 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">产品品类</div>
+      <div class="value">5</div>
+      <div class="unit">大类</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">四大品牌</div>
+      <div class="value">4</div>
+      <div class="unit">家</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">价格区间</div>
+      <div class="value" style="font-size:18px">7,100 ~ 95,590</div>
+      <div class="unit">元</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">型号总数</div>
+      <div class="value">201</div>
+      <div class="unit">个</div>
+    </div>
+  </div>
+
+  <!-- ====== 新增：各品类四大厂商价格分布 ====== -->
+  <div class="section-divider">
+    <div class="line"></div>
+    <h2>各品类四大厂商价格分布</h2>
+    <div class="line-l"></div>
+  </div>
+
+  <div class="legend-bar">
+    <div class="legend-item"><div class="legend-swatch boke"></div><span style="color:#ffc107;font-weight:700">波科 ★ 重点标记</span></div>
+    <div class="legend-item"><div class="legend-swatch other" style="background:#4fc3f7"></div>百多力</div>
+    <div class="legend-item"><div class="legend-swatch other" style="background:#ffb74d"></div>美敦力</div>
+    <div class="legend-item"><div class="legend-swatch other" style="background:#81c784"></div>雅培</div>
+  </div>
+
+  <!-- 第一行：单腔起搏器 + 双腔起搏器 -->
+  <div class="row">
+    <div class="col">
+      <div class="card" style="border-color:rgba(255,193,7,.15)">
+        <div class="card-title"><span class="dot" style="background:#ffc107;box-shadow:0 0 8px #ffc107"></span>单腔起搏器 · 厂商价格分布</div>
+        <div class="chart-box chart-box-cat" id="cat_pacemaker_sr"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="border-color:rgba(255,193,7,.15)">
+        <div class="card-title"><span class="dot" style="background:#ffc107;box-shadow:0 0 8px #ffc107"></span>双腔起搏器 · 厂商价格分布</div>
+        <div class="chart-box chart-box-cat" id="cat_pacemaker_dr"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第二行：单腔ICD + 双腔ICD -->
+  <div class="row">
+    <div class="col">
+      <div class="card" style="border-color:rgba(255,193,7,.15)">
+        <div class="card-title"><span class="dot" style="background:#ffc107;box-shadow:0 0 8px #ffc107"></span>单腔ICD · 厂商价格分布</div>
+        <div class="chart-box chart-box-cat" id="cat_icd_sr"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="border-color:rgba(255,193,7,.15)">
+        <div class="card-title"><span class="dot" style="background:#ffc107;box-shadow:0 0 8px #ffc107"></span>双腔ICD · 厂商价格分布</div>
+        <div class="chart-box chart-box-cat" id="cat_icd_dr"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第三行：CRTD (双极+四极合并) -->
+  <div class="row">
+    <div class="col">
+      <div class="card" style="border-color:rgba(255,193,7,.15)">
+        <div class="card-title"><span class="dot" style="background:#ffc107;box-shadow:0 0 8px #ffc107"></span>CRTD（双极+四极）· 厂商价格分布</div>
+        <div class="chart-box chart-box-cat" id="cat_crtd"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>CRTD 双极 vs 四极 · 厂商均价对比</div>
+        <div class="chart-box chart-box-cat" id="cat_crtd_compare"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 原有总览图表 ====== -->
+  <div class="section-divider">
+    <div class="line"></div>
+    <h2>全市场价格总览</h2>
+    <div class="line-l"></div>
+  </div>
+
+  <!-- 箱线图 + 均价极差 -->
+  <div class="row">
+    <div class="col" style="flex:1.2">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>各品类价格分布箱线图</div>
+        <div class="chart-box chart-box-tall" id="boxplotChart"></div>
+      </div>
+    </div>
+    <div class="col" style="flex:0.8">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>各品类均价与极差</div>
+        <div class="chart-box chart-box-tall" id="rangeChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 厂商对比 -->
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>四大品牌各品类均价对比</div>
+        <div class="chart-box" id="companyChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 价格区间 + 散点 -->
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>全市场价格区间分布</div>
+        <div class="chart-box chart-box-short" id="histChart"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>四大品牌型号价格散点图</div>
+        <div class="chart-box chart-box-short" id="scatterChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 详细数据表 -->
+  <div class="card" style="margin-top:24px">
+    <div class="card-title"><span class="dot"></span>各品类四大品牌价格明细</div>
+    <div class="table-wrap" id="tableWrap"></div>
+  </div>
+
+  <div class="insight" style="margin-top:24px">
+    <strong>💡 关键发现：</strong><br>
+    1. <strong>价格梯度清晰</strong>：起搏器（1~4万）→ ICD（4~8万）→ CRTD（4~10万），产品技术含量与价格正相关。<br>
+    2. <strong style="color:#ffc107">波科定位策略</strong>：波科在起搏器领域价格偏低（单腔均价 ¥16,991、双腔 ¥28,334），在 ICD 领域也具价格竞争力；但在 CRTD-四极高端产品线上均价达 ¥69,685，与百多力/美敦力/雅培接近。<br>
+    3. <strong>进口品牌内部价差</strong>：百多力 CRTD-四极最高 ¥95,590，波科同品类仅 ¥48,600 起，极差超 ¥47,000。<br>
+    4. <strong>双腔 vs 单腔溢价</strong>：起搏器双腔均价较单腔溢价约 46%，ICD 双腔较单腔溢价约 22%。<br>
+    5. <strong style="color:#ffc107">波科 CRTD 价格带最宽</strong>：CRTD-双极 ¥39,700~74,700，CRTD-四极 ¥48,600~89,200，覆盖中低端到高端全价格段。
+  </div>
+
+  <div class="footer">浙江带量采购价格分析 · 数据截至 2026年4月 · 仅供参考</div>
+</div>
+
+<script>
+const rawData = [
+  {
+    "cat": "单腔起搏器",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Enitra 6 SR",
+        "price": 22626
+      },
+      {
+        "name": "Evity 6 SR-T",
+        "price": 11990
+      },
+      {
+        "name": "Enticos 4 SR",
+        "price": 13577
+      },
+      {
+        "name": "Edora 8 SR",
+        "price": 24740
+      },
+      {
+        "name": "Edora 8 SR-T",
+        "price": 24740
+      },
+      {
+        "name": "Amvia Sky SR-T",
+        "price": 24740
+      },
+      {
+        "name": "Solvia Rise SR-T",
+        "price": 24740
+      }
+    ]
+  },
+  {
+    "cat": "单腔起搏器",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "A3SR01",
+        "price": 12040
+      },
+      {
+        "name": "X2SR01",
+        "price": 25840
+      },
+      {
+        "name": "SPSR01",
+        "price": 16540
+      },
+      {
+        "name": "ATSR01",
+        "price": 16540
+      },
+      {
+        "name": "BP1SR",
+        "price": 25840
+      }
+    ]
+  },
+  {
+    "cat": "单腔起搏器",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "PM1282",
+        "price": 26776
+      },
+      {
+        "name": "PM1182",
+        "price": 25276
+      },
+      {
+        "name": "PM1272",
+        "price": 24250
+      },
+      {
+        "name": "PM1152",
+        "price": 22276
+      },
+      {
+        "name": "PM1172",
+        "price": 25276
+      },
+      {
+        "name": "PM1240",
+        "price": 19464
+      },
+      {
+        "name": "PM1160",
+        "price": 17552
+      },
+      {
+        "name": "PM1140",
+        "price": 12976
+      }
+    ]
+  },
+  {
+    "cat": "单腔起搏器",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "L110",
+        "price": 19956
+      },
+      {
+        "name": "L310",
+        "price": 22500
+      },
+      {
+        "name": "L210",
+        "price": 15000
+      },
+      {
+        "name": "L100",
+        "price": 15859
+      },
+      {
+        "name": "S701",
+        "price": 11639
+      }
+    ]
+  },
+  {
+    "cat": "双腔起搏器",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Enitra 6 DR",
+        "price": 19500
+      },
+      {
+        "name": "Evity 6 DR-T",
+        "price": 35996
+      },
+      {
+        "name": "Edora 8 DR",
+        "price": 32977
+      },
+      {
+        "name": "Edora 8 DR-T",
+        "price": 38790
+      },
+      {
+        "name": "Amvia Sky DR-T",
+        "price": 41590
+      },
+      {
+        "name": "Solvia Rise DR-T",
+        "price": 21990
+      },
+      {
+        "name": "Enticos 4 DR",
+        "price": 18301
+      },
+      {
+        "name": "Enticos 4 D",
+        "price": 20997
+      }
+    ]
+  },
+  {
+    "cat": "双腔起搏器",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "X3DR01",
+        "price": 32939
+      },
+      {
+        "name": "X2DR01",
+        "price": 41338
+      },
+      {
+        "name": "SPDR01",
+        "price": 25400
+      },
+      {
+        "name": "SPDRL1",
+        "price": 35738
+      }
+    ]
+  },
+  {
+    "cat": "双腔起搏器",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "PM2282",
+        "price": 44916
+      },
+      {
+        "name": "PM2182",
+        "price": 32970
+      },
+      {
+        "name": "PM2172",
+        "price": 25316
+      },
+      {
+        "name": "PM2152",
+        "price": 36700
+      },
+      {
+        "name": "PM2272",
+        "price": 44916
+      },
+      {
+        "name": "PM2224",
+        "price": 17600
+      },
+      {
+        "name": "PM2140",
+        "price": 23000
+      },
+      {
+        "name": "PM2240",
+        "price": 30338
+      },
+      {
+        "name": "PM2160",
+        "price": 23752
+      }
+    ]
+  },
+  {
+    "cat": "双腔起搏器",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "L121",
+        "price": 20658
+      },
+      {
+        "name": "S722",
+        "price": 15177
+      },
+      {
+        "name": "L131",
+        "price": 37000
+      },
+      {
+        "name": "L311",
+        "price": 22600
+      },
+      {
+        "name": "L331",
+        "price": 42200
+      },
+      {
+        "name": "L231",
+        "price": 42200
+      },
+      {
+        "name": "L211",
+        "price": 18500
+      }
+    ]
+  },
+  {
+    "cat": "CRTP四极",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Amvia Sky HF-T QP",
+        "price": 65990
+      },
+      {
+        "name": "Enitra 8 HF-T QP",
+        "price": 56235
+      },
+      {
+        "name": "Edora 8 HF-T QP",
+        "price": 30990
+      }
+    ]
+  },
+  {
+    "cat": "CRTP四极",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "W4TR04",
+        "price": 66652
+      },
+      {
+        "name": "W4TR05",
+        "price": 31652
+      },
+      {
+        "name": "W4TR06",
+        "price": 60020
+      }
+    ]
+  },
+  {
+    "cat": "CRTP四极",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "PM3262",
+        "price": 47250
+      },
+      {
+        "name": "PM3160",
+        "price": 47250
+      },
+      {
+        "name": "PM3242",
+        "price": 47250
+      },
+      {
+        "name": "PM3140",
+        "price": 31500
+      }
+    ]
+  },
+  {
+    "cat": "CRTP四极",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "U128",
+        "price": 31321
+      },
+      {
+        "name": "U228",
+        "price": 60138
+      }
+    ]
+  },
+  {
+    "cat": "植入式单腔心律转复除颤器",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Rivacor 5 VR-T DX",
+        "price": 57190
+      },
+      {
+        "name": "Intica Neo 5 VR-T",
+        "price": 52890
+      },
+      {
+        "name": "Rivacor 5 VR-T",
+        "price": 39990
+      },
+      {
+        "name": "Rivacor 3 VR-T",
+        "price": 57190
+      },
+      {
+        "name": "Rivacor 7 VR-T",
+        "price": 57190
+      },
+      {
+        "name": "Rivacor 7 VR-T DX",
+        "price": 57190
+      },
+      {
+        "name": "Intica Neo 5 VR-T DX",
+        "price": 48496
+      }
+    ]
+  },
+  {
+    "cat": "植入式单腔心律转复除颤器",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "DVMB2D1",
+        "price": 39122
+      },
+      {
+        "name": "DVMC3D4",
+        "price": 56322
+      },
+      {
+        "name": "DVME3D1",
+        "price": 52022
+      },
+      {
+        "name": "DVME3D4",
+        "price": 52022
+      },
+      {
+        "name": "DVMB2D4",
+        "price": 56322
+      },
+      {
+        "name": "DVMC3D1",
+        "price": 49205
+      },
+      {
+        "name": "DVPC3D1",
+        "price": 56322
+      },
+      {
+        "name": "DVPC3D4",
+        "price": 56322
+      },
+      {
+        "name": "DVBC3D4",
+        "price": 47722
+      },
+      {
+        "name": "DVBC3D1",
+        "price": 47722
+      }
+    ]
+  },
+  {
+    "cat": "植入式单腔心律转复除颤器",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "CDVRA600Q",
+        "price": 56176
+      },
+      {
+        "name": "CDVRA300Q",
+        "price": 38976
+      },
+      {
+        "name": "CD1377-36Q",
+        "price": 51876
+      },
+      {
+        "name": "CD1359-40C",
+        "price": 47576
+      },
+      {
+        "name": "CD1231-40",
+        "price": 47576
+      },
+      {
+        "name": "CD1359-40",
+        "price": 47576
+      },
+      {
+        "name": "CD1231-40Q",
+        "price": 47576
+      },
+      {
+        "name": "CD1377-36C",
+        "price": 47576
+      }
+    ]
+  },
+  {
+    "cat": "植入式单腔心律转复除颤器",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "D432",
+        "price": 55600
+      },
+      {
+        "name": "D141",
+        "price": 46555
+      },
+      {
+        "name": "D140",
+        "price": 47000
+      },
+      {
+        "name": "D232",
+        "price": 38400
+      },
+      {
+        "name": "D120",
+        "price": 51300
+      }
+    ]
+  },
+  {
+    "cat": "植入式双腔心律转复除颤器",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Rivacor 7 DR-T",
+        "price": 71190
+      },
+      {
+        "name": "Rivacor 5 DR-T",
+        "price": 49990
+      },
+      {
+        "name": "Rivacor 3 DR-T",
+        "price": 71190
+      },
+      {
+        "name": "Intica Neo 5 DR-T",
+        "price": 58200
+      }
+    ]
+  },
+  {
+    "cat": "植入式双腔心律转复除颤器",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "DDME3D4",
+        "price": 64449
+      },
+      {
+        "name": "DDMC3D1",
+        "price": 69749
+      },
+      {
+        "name": "DDMC3D4",
+        "price": 57594
+      },
+      {
+        "name": "DDMB2D1",
+        "price": 48549
+      },
+      {
+        "name": "DDME3D1",
+        "price": 64449
+      },
+      {
+        "name": "DDMB2D4",
+        "price": 69749
+      },
+      {
+        "name": "DDPC3D1",
+        "price": 69749
+      },
+      {
+        "name": "DDPC3D4",
+        "price": 69749
+      },
+      {
+        "name": "DDBC3D4",
+        "price": 59149
+      },
+      {
+        "name": "DDBC3D1",
+        "price": 59149
+      }
+    ]
+  },
+  {
+    "cat": "植入式双腔心律转复除颤器",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "CDDRA300Q",
+        "price": 49922
+      },
+      {
+        "name": "CDDRA600Q",
+        "price": 71122
+      },
+      {
+        "name": "CD2377-36Q",
+        "price": 65822
+      },
+      {
+        "name": "CD2377-36C",
+        "price": 60522
+      },
+      {
+        "name": "CD2359-40C",
+        "price": 60522
+      },
+      {
+        "name": "CD2231-40",
+        "price": 54998
+      },
+      {
+        "name": "CD2231-40Q",
+        "price": 60522
+      },
+      {
+        "name": "CD2359-40",
+        "price": 60522
+      }
+    ]
+  },
+  {
+    "cat": "植入式双腔心律转复除颤器",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "D142",
+        "price": 55290
+      },
+      {
+        "name": "D433",
+        "price": 70687
+      },
+      {
+        "name": "D143",
+        "price": 53342
+      },
+      {
+        "name": "D233",
+        "price": 49487
+      },
+      {
+        "name": "D121",
+        "price": 65387
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-双极",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Rivacor 3 HF-T",
+        "price": 81990
+      },
+      {
+        "name": "Rivacor 5 HF-T",
+        "price": 46990
+      },
+      {
+        "name": "Rivacor 7 HF-T",
+        "price": 81990
+      },
+      {
+        "name": "Intica Neo 5 HF-T",
+        "price": 60137
+      },
+      {
+        "name": "Ilivia Neo 7 HF-T",
+        "price": 71990
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-双极",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "DTMB2D1",
+        "price": 57500
+      },
+      {
+        "name": "DTMB2D4",
+        "price": 81300
+      },
+      {
+        "name": "DTMC2D1",
+        "price": 81300
+      },
+      {
+        "name": "DTMC2D4",
+        "price": 46300
+      },
+      {
+        "name": "DTPC2D1",
+        "price": 81300
+      },
+      {
+        "name": "DTPC2D4",
+        "price": 81300
+      },
+      {
+        "name": "DTBA2D4",
+        "price": 66300
+      },
+      {
+        "name": "DTBA2D1",
+        "price": 66300
+      },
+      {
+        "name": "DTBC2D4",
+        "price": 56258
+      },
+      {
+        "name": "DTBC2D1",
+        "price": 56258
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-双极",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "CD3231-40",
+        "price": 65000
+      },
+      {
+        "name": "CD3361-40Q",
+        "price": 45000
+      },
+      {
+        "name": "CD3361-40QC",
+        "price": 56255
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-双极",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "G124",
+        "price": 74700
+      },
+      {
+        "name": "G125",
+        "price": 39700
+      },
+      {
+        "name": "G141",
+        "price": 55290
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-四极",
+    "comp": "百多力",
+    "models": [
+      {
+        "name": "Intica Neo 5 HF-T QP",
+        "price": 60137
+      },
+      {
+        "name": "Rivacor 7 HF-T QP",
+        "price": 95590
+      },
+      {
+        "name": "Rivacor 3 HF-T QP",
+        "price": 95590
+      },
+      {
+        "name": "Rivacor 5 HF-T QP",
+        "price": 95590
+      },
+      {
+        "name": "Ilivia Neo 7 HF-T QP",
+        "price": 54990
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-四极",
+    "comp": "美敦力",
+    "models": [
+      {
+        "name": "DTMA2QQ",
+        "price": 93170
+      },
+      {
+        "name": "DTMA2Q1",
+        "price": 52570
+      },
+      {
+        "name": "DTMC2QQ",
+        "price": 93170
+      },
+      {
+        "name": "DTPC2Q1",
+        "price": 93170
+      },
+      {
+        "name": "DTPC2QQ",
+        "price": 93170
+      },
+      {
+        "name": "DTBA2QQ",
+        "price": 75770
+      },
+      {
+        "name": "DTBC2QQ",
+        "price": 56258
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-四极",
+    "comp": "雅培",
+    "models": [
+      {
+        "name": "CD3371-40Q",
+        "price": 83122
+      },
+      {
+        "name": "CDHFA300Q",
+        "price": 94722
+      },
+      {
+        "name": "CD3367-40QC",
+        "price": 81480
+      },
+      {
+        "name": "CD3367-40Q",
+        "price": 54122
+      },
+      {
+        "name": "CDHFA600Q",
+        "price": 94722
+      },
+      {
+        "name": "CD3249-40",
+        "price": 76727
+      },
+      {
+        "name": "CD3367-40C",
+        "price": 77322
+      },
+      {
+        "name": "CD3371-40",
+        "price": 77322
+      },
+      {
+        "name": "CD3249-40Q",
+        "price": 77322
+      }
+    ]
+  },
+  {
+    "cat": "CRTD-四极",
+    "comp": "波科",
+    "models": [
+      {
+        "name": "G447",
+        "price": 89200
+      },
+      {
+        "name": "G146",
+        "price": 55290
+      },
+      {
+        "name": "G148",
+        "price": 64020
+      },
+      {
+        "name": "G158",
+        "price": 71800
+      },
+      {
+        "name": "G138",
+        "price": 48600
+      },
+      {
+        "name": "G247",
+        "price": 89200
+      }
+    ]
+  }
+];
+
+// 品牌颜色：波科金色高亮，其余使用柔和色
+const compColors = {
+  '波科':  '#ffc107',   // 金色高亮
+  '百多力':'#4fc3f7',
+  '美敦力':'#ffb74d',
+  '雅培':  '#81c784'
+};
+const compColorsMuted = {
+  '波科':  '#ffc107',
+  '百多力':'rgba(79,195,247,.55)',
+  '美敦力':'rgba(255,183,77,.55)',
+  '雅培':  'rgba(129,199,132,.55)'
+};
+const mainComps = ['百多力','美敦力','雅培','波科'];
+
+// 品类定义（5大类，CRTD合并双极+四极）
+const catGroups = [
+  { key:'pacemaker_sr', label:'单腔起搏器', cats:['单腔起搏器'] },
+  { key:'pacemaker_dr', label:'双腔起搏器', cats:['双腔起搏器'] },
+  { key:'icd_sr', label:'单腔ICD', cats:['植入式单腔心律转复除颤器'] },
+  { key:'icd_dr', label:'双腔ICD', cats:['植入式双腔心律转复除颤器'] },
+  { key:'crtd', label:'CRTD', cats:['CRTD-双极','CRTD-四极'] }
+];
+
+const catOrder = ['单腔起搏器','双腔起搏器','CRTP四极','植入式单腔心律转复除颤器','植入式双腔心律转复除颤器','CRTD-双极','CRTD-四极'];
+const catShort = {'单腔起搏器':'单腔起搏器','双腔起搏器':'双腔起搏器','CRTP四极':'CRTP四极','植入式单腔心律转复除颤器':'ICD-单腔','植入式双腔心律转复除颤器':'ICD-双腔','CRTD-双极':'CRTD-双极','CRTD-四极':'CRTD-四极'};
+
+function getStats(prices) {
+  const s = [...prices].sort((a,b)=>a-b);
+  const n = s.length;
+  return { min:s[0], max:s[n-1], q1:s[Math.floor(n*.25)], median:s[Math.floor(n*.5)], q3:s[Math.floor(n*.75)], mean:Math.round(s.reduce((a,b)=>a+b,0)/n) };
+}
+
+const catData = {};
+catOrder.forEach(c => {
+  const items = rawData.filter(d => d.cat === c);
+  const allPrices = items.flatMap(d => d.models.map(m => m.price));
+  const compStats = {};
+  items.forEach(d => { const p = d.models.map(m=>m.price); compStats[d.comp] = { prices:p, ...getStats(p) }; });
+  catData[c] = { allPrices, ...getStats(allPrices), comps:compStats, count:allPrices.length };
+});
+
+// ====== 各品类厂商价格分布图（Strip Plot） ======
+const allChartInstances = [];
+
+function createCategoryChart(domId, catGroup) {
+  const chart = echarts.init(document.getElementById(domId));
+  allChartInstances.push(chart);
+
+  // 收集该品类下的所有型号数据（含型号名称）
+  const brandModels = {};
+  mainComps.forEach(comp => { brandModels[comp] = []; });
+  catGroup.cats.forEach(catName => {
+    rawData.filter(d => catGroup.cats.includes(d.cat) && mainComps.includes(d.comp)).forEach(d => {
+      d.models.forEach(m => { brandModels[d.comp].push({ name: m.name, price: m.price, cat: d.cat }); });
+    });
+  });
+
+  // 计算全局Y轴范围
+  const allPrices = mainComps.flatMap(c => brandModels[c].map(m=>m.price));
+  const yMin = Math.floor(Math.min(...allPrices) / 5000) * 5000;
+  const yMax = Math.ceil(Math.max(...allPrices) / 5000) * 5000;
+
+  // 为每个品牌生成系列：boxplot + scatter
+  const series = [];
+  const boxplotData = [];
+  const scatterSeries = [];
+
+  mainComps.forEach((comp, ci) => {
+    const models = brandModels[comp];
+    if (models.length === 0) return;
+    const prices = models.map(m=>m.price);
+    const stats = getStats(prices);
+    const isBoke = comp === '波科';
+
+    // Boxplot 系列
+    boxplotData.push([stats.min, stats.q1, stats.median, stats.q3, stats.max]);
+
+    // Scatter 系列（每个型号一个点，携带型号名和子品类）
+    const scatterPoints = models.map(m => ({ value: [ci, m.price], modelName: m.name, subCat: m.cat }));
+    scatterSeries.push({
+      name: comp,
+      type: 'scatter',
+      data: scatterPoints,
+      symbolSize: isBoke ? 12 : 9,
+      itemStyle: {
+        color: isBoke ? '#ffc107' : compColors[comp],
+        borderColor: isBoke ? '#fff' : 'transparent',
+        borderWidth: isBoke ? 2 : 0,
+        shadowBlur: isBoke ? 12 : 0,
+        shadowColor: isBoke ? 'rgba(255,193,7,.6)' : 'transparent',
+        opacity: isBoke ? 1 : 0.75
+      },
+      z: isBoke ? 20 : 10,
+      tooltip: {
+        formatter: p => {
+          const d = p.data;
+          return `<b style="color:${isBoke?'#ffc107':compColors[comp]}">${comp}</b><br/><span style="color:#b0bec5">${d.modelName}</span><br/><span style="font-size:15px;font-weight:700">¥${d.value[1].toLocaleString()}</span>`;
+        }
+      }
+    });
+
+    // 均价标记
+    scatterSeries.push({
+      name: comp + '均价',
+      type: 'scatter',
+      data: [{ value: [ci, stats.mean], modelName: '均价' }],
+      symbol: 'diamond',
+      symbolSize: isBoke ? 16 : 12,
+      itemStyle: {
+        color: isBoke ? '#ff6f00' : compColors[comp],
+        borderColor: isBoke ? '#ffc107' : '#0f1923',
+        borderWidth: 2,
+        shadowBlur: isBoke ? 16 : 0,
+        shadowColor: isBoke ? 'rgba(255,193,7,.5)' : 'transparent'
+      },
+      z: isBoke ? 30 : 15,
+      tooltip: {
+        formatter: p => `<b style="color:${isBoke?'#ff6f00':compColors[comp]}">${comp} 均价</b><br/><span style="font-size:15px;font-weight:700">¥${p.data.value[1].toLocaleString()}</span>`
+      }
+    });
+  });
+
+  chart.setOption({
+    tooltip: { trigger:'item' },
+    grid: { left:70, right:20, top:30, bottom:30 },
+    xAxis: {
+      type: 'category',
+      data: mainComps,
+      axisLabel: {
+        fontSize: 13, color: '#a0c4d8',
+        formatter: v => v === '波科' ? '{boke|★ ' + v + '}' : v,
+        rich: { boke: { color:'#ffc107', fontWeight:'bold', fontSize:14 } }
+      },
+      axisLine: { lineStyle:{ color:'rgba(255,255,255,.1)' } },
+      axisTick: { show:false }
+    },
+    yAxis: {
+      type: 'value',
+      min: yMin, max: yMax,
+      axisLabel: { formatter:v=>'¥'+(v/10000).toFixed(1)+'万', color:'#7a9bb5', fontSize:11 },
+      splitLine: { lineStyle:{ color:'rgba(255,255,255,.05)' } }
+    },
+    legend: { show:false },
+    series: [
+      // 背景箱线图
+      {
+        type: 'boxplot',
+        data: boxplotData,
+        itemStyle: { color:'transparent', borderWidth:0 },
+        whiskerStyle: { color:'rgba(255,255,255,.12)', width:1 },
+        capStyle: { color:'rgba(255,255,255,.12)', width:1 },
+        whiskerWidth: 20,
+        boxWidth: ['30%','50%'],
+        tooltip: { show:false },
+        z: 1,
+        silent: true
+      },
+      // 各品牌散点 + 均价
+      ...scatterSeries
+    ]
+  });
+
+  return chart;
+}
+
+// 创建5个品类图表
+createCategoryChart('cat_pacemaker_sr', catGroups[0]);
+createCategoryChart('cat_pacemaker_dr', catGroups[1]);
+createCategoryChart('cat_icd_sr', catGroups[2]);
+createCategoryChart('cat_icd_dr', catGroups[3]);
+createCategoryChart('cat_crtd', catGroups[4]);
+
+// ====== CRTD 双极 vs 四极对比 ======
+const crtdCompChart = echarts.init(document.getElementById('cat_crtd_compare'));
+allChartInstances.push(crtdCompChart);
+crtdCompChart.setOption({
+  tooltip: { trigger:'axis', formatter: params => {
+    let s = `<b>${params[0].axisValue}</b><br/>`;
+    params.forEach(p => { if(p.value!=null) s += `${p.marker} ${p.seriesName}: ¥${p.value.toLocaleString()}<br/>`; });
+    return s;
+  }},
+  legend: { data:['CRTD-双极均价','CRTD-四极均价'], textStyle:{color:'#7a9bb5'}, top:0 },
+  grid: { left:70, right:20, top:40, bottom:30 },
+  xAxis: { type:'category', data:mainComps.map(c=>c==='波科'?'★ 波科':c), axisLabel:{color:'#a0c4d8',fontSize:12,formatter:v=>{const m=v.match(/★?\s*(.+)/);return m?m[1]:v}},axisLine:{lineStyle:{color:'rgba(255,255,255,.1)'}}} ,
+  yAxis: { type:'value', axisLabel:{formatter:v=>'¥'+(v/10000).toFixed(0)+'万',color:'#7a9bb5'}, splitLine:{lineStyle:{color:'rgba(255,255,255,.05)'}} },
+  series: [
+    { name:'CRTD-双极均价', type:'bar', data:mainComps.map(c=>catData['CRTD-双极'].comps[c]?catData['CRTD-双极'].comps[c].mean:null), itemStyle:{color:mainComps.map(c=>c==='波科'?'#ffc107':'rgba(79,195,247,.5)')}, barWidth:28, label:{show:true,position:'top',formatter:p=>p.value?'¥'+(p.value/10000).toFixed(1)+'万':'',fontSize:10,color:'#81d4fa'} },
+    { name:'CRTD-四极均价', type:'bar', data:mainComps.map(c=>catData['CRTD-四极'].comps[c]?catData['CRTD-四极'].comps[c].mean:null), itemStyle:{color:mainComps.map(c=>c==='波科'?'#ff8f00':'rgba(129,199,132,.5)')}, barWidth:28, label:{show:true,position:'top',formatter:p=>p.value?'¥'+(p.value/10000).toFixed(1)+'万':'',fontSize:10,color:'#81d4fa'} }
+  ]
+});
+
+// ====== 原有总览图表 ======
+
+// 1. 箱线图
+const boxplotChart = echarts.init(document.getElementById('boxplotChart'));
+allChartInstances.push(boxplotChart);
+const boxData = [];
+catOrder.forEach(c => { const d = catData[c]; boxData.push([d.min, d.q1, d.median, d.q3, d.max]); });
+boxplotChart.setOption({
+  tooltip: { trigger:'item', formatter: p => {
+    if(p.seriesType==='boxplot') {
+      const c = catOrder[p.dataIndex];
+      return `<b>${c}</b><br/>最大值: ¥${p.data[5].toLocaleString()}<br/>Q3: ¥${p.data[4].toLocaleString()}<br/>中位数: ¥${p.data[3].toLocaleString()}<br/>Q1: ¥${p.data[2].toLocaleString()}<br/>最小值: ¥${p.data[1].toLocaleString()}`;
+    }
+  }},
+  grid: { left:120, right:40, top:20, bottom:50 },
+  xAxis: { type:'value', axisLabel:{formatter:v=>'¥'+(v/10000).toFixed(1)+'万'}, splitLine:{lineStyle:{color:'rgba(255,255,255,.06)'}} },
+  yAxis: { type:'category', data:catOrder.map(c=>catShort[c]), axisLabel:{fontSize:13,color:'#a0c4d8'} },
+  series: [{ type:'boxplot', data:boxData, itemStyle:{color:'rgba(79,195,247,.25)',borderColor:'#4fc3f7',borderWidth:2}, whiskerStyle:{color:'#81d4fa'}, capStyle:{color:'#81d4fa'} }]
+});
+
+// 2. 均价与极差
+const rangeChart = echarts.init(document.getElementById('rangeChart'));
+allChartInstances.push(rangeChart);
+rangeChart.setOption({
+  tooltip: { trigger:'axis', formatter: params => {
+    const c = catOrder[params[0].dataIndex]; const d = catData[c];
+    return `<b>${c}</b><br/>均价: ¥${d.mean.toLocaleString()}<br/>最低: ¥${d.min.toLocaleString()}<br/>最高: ¥${d.max.toLocaleString()}<br/>极差: ¥${(d.max-d.min).toLocaleString()}`;
+  }},
+  legend: { data:['均价','最低价','最高价'], textStyle:{color:'#7a9bb5'}, top:0 },
+  grid: { left:120, right:30, top:40, bottom:30 },
+  xAxis: { type:'value', axisLabel:{formatter:v=>'¥'+(v/10000).toFixed(1)+'万'}, splitLine:{lineStyle:{color:'rgba(255,255,255,.06)'}} },
+  yAxis: { type:'category', data:catOrder.map(c=>catShort[c]), axisLabel:{fontSize:12,color:'#a0c4d8'} },
+  series: [
+    { name:'最低价', type:'bar', stack:'range', data:catOrder.map(c=>catData[c].min), itemStyle:{color:'rgba(79,195,247,.3)'}, barWidth:18 },
+    { name:'均价', type:'bar', data:catOrder.map(c=>catData[c].mean), itemStyle:{color:'#4fc3f7'}, barWidth:18, label:{show:true,position:'right',formatter:p=>'¥'+(p.value/10000).toFixed(1)+'万',fontSize:10,color:'#81d4fa'} },
+    { name:'最高价', type:'scatter', data:catOrder.map(c=>catData[c].max), symbol:'diamond', symbolSize:12, itemStyle:{color:'#ef5350'} }
+  ]
+});
+
+// 3. 厂商对比（波科高亮）
+const companyChart = echarts.init(document.getElementById('companyChart'));
+allChartInstances.push(companyChart);
+companyChart.setOption({
+  tooltip: { trigger:'axis', formatter: params => {
+    let s = `<b>${params[0].axisValue}</b><br/>`;
+    params.forEach(p => { if(p.value!=null) s += `${p.marker} ${p.seriesName}: ¥${p.value.toLocaleString()}<br/>`; });
+    return s;
+  }},
+  legend: { data:mainComps, textStyle:{color:'#7a9bb5'}, top:0 },
+  grid: { left:80, right:30, top:40, bottom:40 },
+  xAxis: { type:'category', data:catOrder.map(c=>catShort[c]), axisLabel:{fontSize:12,color:'#a0c4d8',rotate:15}, axisLine:{lineStyle:{color:'rgba(255,255,255,.1)'}} },
+  yAxis: { type:'value', axisLabel:{formatter:v=>'¥'+(v/10000).toFixed(0)+'万'}, splitLine:{lineStyle:{color:'rgba(255,255,255,.06)'}} },
+  series: mainComps.map(comp => ({
+    name:comp, type:'bar',
+    data:catOrder.map(c => catData[c].comps[comp]?catData[c].comps[comp].mean:null),
+    itemStyle:{
+      color: comp==='波科' ? '#ffc107' : compColors[comp],
+      borderColor: comp==='波科' ? '#ffca28' : 'transparent',
+      borderWidth: comp==='波科' ? 2 : 0,
+      shadowBlur: comp==='波科' ? 8 : 0,
+      shadowColor: comp==='波科' ? 'rgba(255,193,7,.4)' : 'transparent'
+    },
+    barGap:'10%', barWidth:16
+  }))
+});
+
+// 4. 直方图
+const histChart = echarts.init(document.getElementById('histChart'));
+allChartInstances.push(histChart);
+const bins = [];
+for(let b=0;b<=100000;b+=10000) bins.push({min:b,max:b+10000,count:0,label:`¥${(b/10000).toFixed(0)}-${((b+10000)/10000).toFixed(0)}万`});
+rawData.forEach(d => d.models.forEach(m => { const idx=Math.min(Math.floor(m.price/10000),bins.length-1); if(idx>=0&&idx<bins.length)bins[idx].count++; }));
+histChart.setOption({
+  tooltip:{trigger:'axis',formatter:params=>`${params[0].axisValue}<br/>型号数: ${params[0].value} 个`},
+  grid:{left:50,right:20,top:20,bottom:40},
+  xAxis:{type:'category',data:bins.map(b=>b.label),axisLabel:{fontSize:10,color:'#7a9bb5',rotate:30},axisLine:{lineStyle:{color:'rgba(255,255,255,.1)'}}},
+  yAxis:{type:'value',axisLabel:{color:'#7a9bb5'},splitLine:{lineStyle:{color:'rgba(255,255,255,.06)'}}},
+  series:[{type:'bar',data:bins.map(b=>b.count),itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#4fc3f7'},{offset:1,color:'rgba(79,195,247,.2)'}])},barWidth:'70%',label:{show:true,position:'top',color:'#81d4fa',fontSize:11}}]
+});
+
+// 5. 散点图（波科高亮）
+const scatterChart = echarts.init(document.getElementById('scatterChart'));
+allChartInstances.push(scatterChart);
+scatterChart.setOption({
+  tooltip:{formatter:p=>`<b style="color:${p.seriesName==='波科'?'#ffc107':'#81d4fa'}">${p.seriesName}</b><br/>¥${p.data[1].toLocaleString()}`},
+  grid:{left:70,right:20,top:20,bottom:40},
+  xAxis:{type:'category',data:mainComps,axisLabel:{color:'#a0c4d8',formatter:v=>v==='波科'?'★ 波科':v},axisLine:{lineStyle:{color:'rgba(255,255,255,.1)'}}},
+  yAxis:{type:'value',axisLabel:{formatter:v=>'¥'+(v/10000).toFixed(0)+'万',color:'#7a9bb5'},splitLine:{lineStyle:{color:'rgba(255,255,255,.06)'}}},
+  series:mainComps.map(comp=>{
+    const isB=comp==='波科';
+    const pts=[];
+    rawData.filter(d=>d.comp===comp).forEach(d=>d.models.forEach(m=>pts.push({value:[comp,m.price],modelName:m.name,cat:d.cat})));
+    return {name:comp,type:'scatter',data:pts,symbolSize:isB?10:7,itemStyle:{color:isB?'#ffc107':compColors[comp],opacity:isB?1:.6,borderColor:isB?'#fff':'transparent',borderWidth:isB?1.5:0,shadowBlur:isB?8:0,shadowColor:isB?'rgba(255,193,7,.5)':'transparent'},z:isB?20:10,tooltip:{formatter:p=>{const d=p.data;return `<b style="color:${isB?'#ffc107':'#81d4fa'}">${comp}</b><br/><span style="color:#b0bec5">${d.modelName}</span><br/><span style="font-size:15px;font-weight:700">¥${d.value[1].toLocaleString()}</span>`;}}};
+  })
+});
+
+// 6. 表格
+let html = '<table><thead><tr><th>品类</th><th>厂商</th><th>型号数</th><th>最低价</th><th>均价</th><th>最高价</th><th>极差</th><th>价位</th></tr></thead><tbody>';
+catOrder.forEach(c => {
+  const d = catData[c];
+  mainComps.forEach((comp, i) => {
+    const s = d.comps[comp];
+    if(!s) return;
+    const range = s.max - s.min;
+    let tag = s.mean<20000?'tag-low':s.mean<50000?'tag-mid':'tag-high';
+    const isB = comp==='波科';
+    const compStyle = isB ? 'style="color:#ffc107;font-weight:700"' : '';
+    html += `<tr${i===0?' style="border-top:2px solid rgba(79,195,247,.2)"':''}>
+      <td>${i===0?catShort[c]:''}</td><td ${compStyle}>${isB?'★ ':''}${comp}</td><td>${s.prices.length}</td>
+      <td>¥${s.min.toLocaleString()}</td><td ${isB?'style="color:#ffc107;font-weight:600"':''}>¥${s.mean.toLocaleString()}</td><td>¥${s.max.toLocaleString()}</td>
+      <td>¥${range.toLocaleString()}</td><td><span class="tag ${tag}">${s.mean<20000?'低价':s.mean<50000?'中价':'高价'}</span></td></tr>`;
+  });
+});
+html += '</tbody></table>';
+document.getElementById('tableWrap').innerHTML = html;
+
+// 响应式
+window.addEventListener('resize', () => { allChartInstances.forEach(c=>c.resize()); });
+</script>
+</body>
+</html>
