@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATP 临床研究三项核心指标对比可视化</title>
+</head>
+<body>
+
+<h2 class="sr-only">ATP 临床研究三项核心指标对比可视化</h2>
+
+<style>
+.wrap { font-family: var(--font-sans); color: var(--color-text-primary); }
+.header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom: 1rem; gap: 16px; flex-wrap: wrap; }
+.title { font-size: 15px; font-weight: 500; margin: 0 0 4px 0; }
+.sub { font-size: 13px; color: var(--color-text-secondary); margin: 0; }
+.legend { display:flex; flex-wrap:wrap; gap:14px; font-size:12px; color: var(--color-text-secondary); align-items:center; }
+.legend span.dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; vertical-align: middle; }
+.cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 1rem 0 1.5rem 0; }
+.card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
+.card .label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 6px 0; }
+.card .num { font-size: 22px; font-weight: 500; margin: 0; line-height: 1.1; }
+.card .sub2 { font-size: 12px; color: var(--color-text-secondary); margin: 4px 0 0 0; }
+.section { margin: 1.25rem 0; }
+.section h3 { font-size: 14px; font-weight: 500; margin: 0 0 8px 0; }
+.note { font-size: 12px; color: var(--color-text-secondary); margin: 4px 0 0 0; }
+.compare { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
+.study { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+.study .row { display:flex; justify-content:space-between; align-items:center; padding: 4px 0; font-size: 12px; }
+.study .row + .row { border-top: 0.5px solid var(--color-border-tertiary); }
+.study .k { color: var(--color-text-secondary); }
+.study .v { font-weight: 500; }
+.tag { display:inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); }
+</style>
+
+<div class="wrap">
+  <div class="header">
+    <div>
+      <p class="title">ATP 临床研究三项核心指标对比</p>
+      <p class="sub">覆盖 TV ICD、S-ICD、EV ICD 三类器械，共 6 项关键研究</p>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#185FA5;"></span>TV ICD</span>
+      <span><span class="dot" style="background:#534AB7;"></span>S-ICD</span>
+      <span><span class="dot" style="background:#0F6E56;"></span>EV ICD</span>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><p class="label">ATP 事件有效性（区间）</p><p class="num">54% – 85%</p><p class="sub2">6 项研究</p></div>
+    <div class="card"><p class="label">ATP 患者发作率（区间）</p><p class="num">2.5% – 16.8%</p><p class="sub2">观察期 11 个月 – 5 年</p></div>
+    <div class="card"><p class="label">ATP 年化获益（区间）</p><p class="num">1% – 11.1% / 年</p><p class="sub2">MADIT-RIT 含亚组</p></div>
+    <div class="card"><p class="label">最高年化获益</p><p class="num">11.1% / 年</p><p class="sub2">PainFREE Rx II（TV ICD）</p></div>
+  </div>
+
+  <div class="section">
+    <h3>1. ATP 事件有效性 vs 年化获益人群比例</h3>
+    <div style="position: relative; width: 100%; height: 320px;">
+      <canvas id="chart1" role="img" aria-label="双轴柱状图：ATP 事件有效性与年化获益人群比例对比">柱状图，展示各研究 ATP 事件有效性和年化获益人群比例</canvas>
+    </div>
+    <p class="note">MADIT-RIT 采用中高频与延迟两个亚组中位展示（有效性 80%~90% 取中点 85%，获益取高频组 2.2%/年）。</p>
+  </div>
+
+  <div class="section">
+    <h3>2. ATP 患者发作率（按研究）</h3>
+    <div style="position: relative; width: 100%; height: 280px;">
+      <canvas id="chart2" role="img" aria-label="柱状图：各研究 ATP 患者发作率">柱状图，展示各研究 ATP 患者发作率</canvas>
+    </div>
+    <p class="note">MADIT-RIT 三组对比：传统组 10.5% vs 高频组 4.2% vs 延迟组 2.5%。</p>
+  </div>
+
+  <div class="section">
+    <h3>3. 各类器械 vs 各类指标（分组对比）</h3>
+    <div style="position: relative; width: 100%; height: 320px;">
+      <canvas id="chart3" role="img" aria-label="分组柱状图：按器械类型展示三项指标">分组柱状图</canvas>
+    </div>
+    <p class="note">每类器械取其研究的算术平均值，用于跨器械横向比较。</p>
+  </div>
+
+  <div class="section">
+    <h3>4. 关键数据卡片</h3>
+    <div class="compare">
+      <div class="study">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>PainFREE Rx II</strong><span class="tag">TV ICD</span>
+        </div>
+        <div class="row"><span class="k">ATP 有效性</span><span class="v">72.0%</span></div>
+        <div class="row"><span class="k">发作率</span><span class="v">15.5% · 11 个月</span></div>
+        <div class="row"><span class="k">年化获益</span><span class="v">11.1% / 年</span></div>
+      </div>
+      <div class="study">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>MADIT-RIT</strong><span class="tag">TV ICD</span>
+        </div>
+        <div class="row"><span class="k">ATP 有效性</span><span class="v">80% – 90%</span></div>
+        <div class="row"><span class="k">发作率（传统/高频/延迟）</span><span class="v">10.5% / 4.2% / 2.5%</span></div>
+        <div class="row"><span class="k">年化获益（高频/延迟）</span><span class="v">2.2% / 1.3%</span></div>
+      </div>
+      <div class="study">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>APPRAISE ATP</strong><span class="tag">TV ICD</span>
+        </div>
+        <div class="row"><span class="k">ATP 有效性</span><span class="v">54.0%</span></div>
+        <div class="row"><span class="k">发作率</span><span class="v">8.3% · 5 年</span></div>
+        <div class="row"><span class="k">年化获益</span><span class="v">1% / 年</span></div>
+      </div>
+      <div class="study">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>MODULAR ATP</strong><span class="tag">S-ICD</span>
+        </div>
+        <div class="row"><span class="k">ATP 有效性</span><span class="v">67.3%</span></div>
+        <div class="row"><span class="k">发作率</span><span class="v">16.8% · 12 个月</span></div>
+        <div class="row"><span class="k">年化获益</span><span class="v">11% / 年</span></div>
+      </div>
+      <div class="study">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>PIVOTAL</strong><span class="tag">EV ICD</span>
+        </div>
+        <div class="row"><span class="k">ATP 有效性</span><span class="v">77%</span></div>
+        <div class="row"><span class="k">发作率</span><span class="v">4.7% · 3 年</span></div>
+        <div class="row"><span class="k">年化获益</span><span class="v">1% / 年</span></div>
+      </div>
+      <div class="study">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <strong>ENLIGHTEN</strong><span class="tag">EV ICD</span>
+        </div>
+        <div class="row"><span class="k">ATP 有效性</span><span class="v">74.2%</span></div>
+        <div class="row"><span class="k">发作率</span><span class="v">2.8% · 1 年</span></div>
+        <div class="row"><span class="k">年化获益</span><span class="v">2.8% / 年</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const COLORS = {
+  TV:  { eff: '#185FA5', effBg: '#B5D4F4', ben: '#378ADD', benBg: '#E6F1FB' },
+  S:   { eff: '#534AB7', effBg: '#CECBF6', ben: '#7F77DD', benBg: '#EEEDFE' },
+  EV:  { eff: '#0F6E56', effBg: '#9FE1CB', ben: '#1D9E75', benBg: '#E1F5EE' }
+};
+const typeMap = ['TV','TV','TV','S','EV','EV'];
+
+new Chart(document.getElementById('chart1'), {
+  type: 'bar',
+  data: {
+    labels: ['PainFREE\nRx II','MADIT-RIT','APPRAISE\nATP','MODULAR\nATP','PIVOTAL','ENLIGHTEN'],
+    datasets: [
+      { label: 'ATP 事件有效性 (%)', data: [72.0, 85, 54.0, 67.3, 77, 74.2],
+        backgroundColor: typeMap.map(t => COLORS[t].effBg),
+        borderColor: typeMap.map(t => COLORS[t].eff),
+        borderWidth: 1.5, borderRadius: 4 },
+      { label: 'ATP 年化获益 (%/年)', data: [11.1, 2.2, 1.0, 11.0, 1.0, 2.8],
+        backgroundColor: typeMap.map(t => COLORS[t].eff),
+        borderColor: typeMap.map(t => COLORS[t].eff),
+        borderWidth: 1, borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.06)' } },
+      x: { ticks: { autoSkip: false, maxRotation: 0, font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('chart2'), {
+  type: 'bar',
+  data: {
+    labels: ['PainFREE\nRx II (15.5%)','MADIT-RIT\n传统组 10.5%','MADIT-RIT\n高频组 4.2%','MADIT-RIT\n延迟组 2.5%','APPRAISE\nATP (8.3%)','MODULAR\nATP (16.8%)','PIVOTAL\n(4.7%)','ENLIGHTEN\n(2.8%)'],
+    datasets: [{
+      label: 'ATP 患者发作率 (%)',
+      data: [15.5, 10.5, 4.2, 2.5, 8.3, 16.8, 4.7, 2.8],
+      backgroundColor: ['#B5D4F4','#85B7EB','#378ADD','#0C447C','#B5D4F4','#CECBF6','#9FE1CB','#9FE1CB'],
+      borderColor: ['#185FA5','#185FA5','#185FA5','#0C447C','#185FA5','#534AB7','#0F6E56','#0F6E56'],
+      borderWidth: 1.5, borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, indexAxis: 'x',
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.06)' } },
+      x: { ticks: { autoSkip: false, maxRotation: 30, font: { size: 10 } }, grid: { display: false } }
+    }
+  }
+});
+
+const avg = (arr) => arr.reduce((a,b)=>a+b,0)/arr.length;
+const tvEff = avg([72.0, 85, 54.0]);
+const sEff  = avg([67.3]);
+const evEff = avg([77, 74.2]);
+const tvRate = avg([15.5, 10.5, 4.2, 2.5, 8.3]);
+const sRate  = 16.8;
+const evRate = avg([4.7, 2.8]);
+const tvBen = avg([11.1, 2.2, 1.0]);
+const sBen  = 11.0;
+const evBen = avg([1.0, 2.8]);
+
+new Chart(document.getElementById('chart3'), {
+  type: 'bar',
+  data: {
+    labels: ['TV ICD','S-ICD','EV ICD'],
+    datasets: [
+      { label: 'ATP 事件有效性 (%)',
+        data: [tvEff, sEff, evEff],
+        backgroundColor: ['#185FA5','#534AB7','#0F6E56'],
+        borderRadius: 4 },
+      { label: 'ATP 患者发作率 (%)',
+        data: [tvRate, sRate, evRate],
+        backgroundColor: ['#85B7EB','#AFA9EC','#5DCAA5'],
+        borderRadius: 4 },
+      { label: 'ATP 年化获益 (%/年)',
+        data: [tvBen, sBen, evBen],
+        backgroundColor: ['#E6F1FB','#EEEDFE','#E1F5EE'],
+        borderColor: ['#185FA5','#534AB7','#0F6E56'],
+        borderWidth: 1.5, borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.06)' } },
+      x: { ticks: { font: { size: 12 } }, grid: { display: false } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
