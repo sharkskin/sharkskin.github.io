@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#071527">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f2740'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle' fill='%2338b6f5'%3E%E2%99%A0%3C/text%3E%3C/svg%3E">
+<title>GTO 德州扑克 · 单挑练习</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 顶栏 ============ -->
+  <div class="topbar">
+    <div class="title"><span class="dot"></span>GTO 单挑练习</div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="btn-coach-toggle" title="教练模式">教练</button>
+    <button class="iconbtn" id="btn-share" title="分享牌局">分享</button>
+    <button class="iconbtn" id="btn-settings" title="设置">设置</button>
+    <button class="iconbtn" id="btn-new" title="开始新局">新局</button>
+  </div>
+
+  <!-- ============ 牌桌视图 ============ -->
+  <div class="view show" id="view-game">
+    <div class="table-area">
+      <!-- AI 座位 -->
+      <div class="seat" id="seat-ai">
+        <div class="avatar ai">AI</div>
+        <div class="seat-info">
+          <div class="seat-name">AI 对手 <span class="tag" id="tag-ai-pos">大盲</span></div>
+          <div class="chip-count" id="chip-ai">200 <small>筹码</small></div>
+        </div>
+        <div class="bubble" id="bubble-ai"></div>
+        <div class="cards" id="cards-ai"></div>
+      </div>
+
+      <!-- 公共牌 -->
+      <div class="board-area">
+        <div class="street-label" id="street-label">翻牌前</div>
+        <div class="board-cards" id="board-cards"></div>
+        <div class="pot-display" id="pot-display">底池 3</div>
+      </div>
+
+      <!-- 玩家座位 -->
+      <div class="seat" id="seat-hero">
+        <div class="avatar">我</div>
+        <div class="seat-info">
+          <div class="seat-name">玩家 <span class="tag" id="tag-hero-pos">按钮</span></div>
+          <div class="chip-count" id="chip-hero">200 <small>筹码</small></div>
+        </div>
+        <div class="bubble" id="bubble-hero"></div>
+        <div class="cards" id="cards-hero"></div>
+      </div>
+    </div>
+
+    <!-- 教练面板 -->
+    <div class="coach" id="coach-panel">
+      <div class="coach-head">
+        <span class="name">GTO 教练</span>
+        <span class="desc" id="coach-desc">等待你的决策…</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="k">胜率（vs 对手范围）</div>
+          <div class="v accent" id="stat-equity">—</div>
+          <div class="bar"><i id="bar-equity" style="width:0%"></i></div>
+        </div>
+        <div class="stat">
+          <div class="k">底池赔率</div>
+          <div class="v gold" id="stat-odds">—</div>
+          <div class="bar gold"><i id="bar-odds" style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="opt-list" id="opt-list"></div>
+      <ul class="reasons" id="reasons"></ul>
+    </div>
+
+    <!-- 结果横幅 -->
+    <div id="result-banner"></div>
+
+    <!-- 操作区 -->
+    <div class="actions" id="actions-area">
+      <div id="bet-ui" style="display:none">
+        <div class="bet-row" id="bet-presets"></div>
+        <div class="slidecontainer">
+          <input type="range" id="bet-slider" min="0" max="100" value="0">
+          <span class="val" id="bet-val">0</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn fold" id="btn-fold">弃牌</button>
+        <button class="btn check" id="btn-check">过牌</button>
+        <button class="btn bet" id="btn-bet">下注</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn allin" id="btn-allin">全下</button>
+        <button class="btn ghost" id="btn-next">下一手</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 范围表视图 ============ -->
+  <div class="view" id="view-range">
+    <div class="view-scroll" style="padding-top:10px">
+      <div class="seg" id="seg-range">
+        <button data-r="sbopen" class="on">SB 开池</button>
+        <button data-r="bbopen">BB 防守</button>
+        <button data-r="vs3bet">对 3bet</button>
+        <button data-r="vs4bet">对 4bet</button>
+      </div>
+      <div class="hint-box" id="range-desc" style="margin:10px 0"></div>
+      <div class="range-grid" id="range-grid"></div>
+      <div class="range-legend">
+        <span><i style="background:#e2574c"></i><em id="lg-a">加注</em></span>
+        <span><i style="background:#2fae6d"></i><em id="lg-c">跟注</em></span>
+        <span><i style="background:#253a52"></i><em id="lg-f">弃牌</em></span>
+        <span class="lg-note">色块宽度 = 该行动的频率</span>
+      </div>
+      <div id="range-detail"></div>
+    </div>
+  </div>
+
+  <!-- ============ 复盘视图 ============ -->
+  <div class="view" id="view-review">
+    <div class="view-scroll" id="review-scroll"></div>
+  </div>
+
+  <!-- ============ 回看视图 ============ -->
+  <div class="view" id="view-replay">
+    <div class="table-area" id="replay-table">
+      <div class="seat">
+        <div class="avatar ai">AI</div>
+        <div class="seat-info">
+          <div class="seat-name">AI 对手</div>
+          <div class="chip-count" id="r-chip-ai">—</div>
+        </div>
+        <div class="cards" id="r-cards-ai"></div>
+      </div>
+      <div class="board-area">
+        <div class="street-label" id="r-street">翻牌前</div>
+        <div class="board-cards" id="r-board"></div>
+        <div class="pot-display" id="r-pot">底池 3</div>
+      </div>
+      <div class="seat">
+        <div class="avatar">我</div>
+        <div class="seat-info">
+          <div class="seat-name">玩家</div>
+          <div class="chip-count" id="r-chip-hero">—</div>
+        </div>
+        <div class="cards" id="r-cards-hero"></div>
+      </div>
+    </div>
+    <div class="coach" id="r-coach">
+      <div class="coach-head">
+        <span class="name">回看</span>
+        <span class="desc" id="r-desc">选择一手牌开始回看</span>
+      </div>
+      <div class="opt-list" id="r-opt-list"></div>
+      <ul class="reasons" id="r-reasons"></ul>
+    </div>
+    <div class="replay-controls">
+      <button class="iconbtn" id="btn-r-prev">◀ 上一步</button>
+      <span class="t" id="r-step-text">—</span>
+      <button class="iconbtn" id="btn-r-next">下一步 ▶</button>
+    </div>
+    <div class="replay-nav">
+      <button class="btn ghost" id="btn-r-play">▶ 自动播放</button>
+      <button class="btn ghost" id="btn-r-first">回到开头</button>
+    </div>
+    <div class="view-scroll" style="max-height:160px">
+      <div class="section-title">选择牌局</div>
+      <div id="r-hand-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ 底部导航 ============ -->
+  <div class="topbar" style="top:auto;bottom:0;border-top:1px solid var(--line);border-bottom:none">
+    <button class="iconbtn active" data-view="game">牌桌</button>
+    <button class="iconbtn" data-view="range">范围</button>
+    <button class="iconbtn" data-view="review">复盘</button>
+    <button class="iconbtn" data-view="replay">回看</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 设置弹窗 -->
+<div class="modal-mask" id="modal-settings">
+  <div class="modal">
+    <h3>设置</h3>
+    <div class="toggle-row">
+      <span>教练模式（实时 GTO 提示）</span>
+      <span class="sp"></span>
+      <div class="switch on" id="sw-coach"><i></i></div>
+    </div>
+    <div class="toggle-row">
+      <span>显示 AI 手牌（练习用）</span>
+      <span class="sp"></span>
+      <div class="switch" id="sw-peek"><i></i></div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>AI 难度</label>
+      <div class="seg" id="seg-diff">
+        <button data-d="easy">新手</button>
+        <button data-d="standard" class="on">标准</button>
+        <button data-d="gto">GTO</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>起始筹码（BB）</label>
+      <select id="sel-stack">
+        <option value="100">100 BB</option>
+        <option value="200">200 BB</option>
+        <option value="400">400 BB</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>决策速度</label>
+      <div class="seg" id="seg-speed">
+        <button data-s="300">快</button>
+        <button data-s="700" class="on">正常</button>
+        <button data-s="1400">慢</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn ghost" data-close>关闭</button>
+      <button class="btn primary" id="btn-apply-settings">保存</button>
+    </div>
+    <div class="note">
+      说明：本工具的 GTO 建议是面向教学的「近似解」——预翻牌基于 169 手牌真实胜率排序构建范围，
+      翻牌后基于胜率 / 底池赔率 / 位置 / 牌面纹理 / SPR 计算混合频率与 EV。
+      它不等于完整求解器输出，但足以建立正确的决策框架。
+    </div>
+  </div>
+</div>
+
+<!-- 分享弹窗 -->
+<div class="modal-mask" id="modal-share">
+  <div class="modal">
+    <h3>分享与导出</h3>
+    <div class="field">
+      <label>分享码（复制给他人，可在任意设备导入回看）</label>
+      <textarea id="share-code" readonly placeholder="点击「生成分享码」"></textarea>
+    </div>
+    <div class="row" style="margin-top:0">
+      <button class="btn ghost" id="btn-gen-code">生成分享码</button>
+      <button class="btn ghost" id="btn-copy-code">复制</button>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>或导入他人的分享码 / 牌局 JSON</label>
+      <textarea id="import-code" placeholder="粘贴分享码或 JSON 内容"></textarea>
+    </div>
+    <div class="row" style="margin-top:0">
+      <button class="btn ghost" id="btn-import">导入回看</button>
+      <button class="btn ghost" id="btn-export-json">导出文件</button>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label>文字战报（可直接粘贴到微信）</label>
+      <textarea id="share-text" readonly placeholder="点击「生成文字战报」"></textarea>
+    </div>
+    <div class="row" style="margin-top:0">
+      <button class="btn ghost" id="btn-gen-text">生成文字战报</button>
+      <button class="btn ghost" id="btn-copy-text">复制</button>
+    </div>
+    <div class="row">
+      <button class="btn ghost" data-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/poker-eval.js"></script>
+<script src="js/preflop-table.js"></script>
+<script src="js/equity.js"></script>
+<script src="js/gto.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
