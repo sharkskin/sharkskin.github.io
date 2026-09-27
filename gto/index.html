@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#071527">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f2740'/%3E%3Ctext x='16' y='24' font-size='19' text-anchor='middle' fill='%2338b6f5'%3E%E2%99%A0%3C/text%3E%3C/svg%3E">
-<title>GTO 德州扑克 · 单挑练习</title>
-<link rel="stylesheet" href="css/style.css">
+<title>GTO 德州扑克 · 单挑 / 多人桌练习</title>
+<!-- ?v= 用来绕开浏览器/托管平台的旧文件缓存；每次改动后请同步递增 -->
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
-<body>
+<body data-build="2026.09.27-c">
 <div id="app">
 
   <!-- ============ 顶栏 ============ -->
@@ -210,6 +211,7 @@
       说明：本工具的 GTO 建议是面向教学的「近似解」——预翻牌基于 169 手牌真实胜率排序构建范围，
       翻牌后基于胜率 / 底池赔率 / 位置 / 牌面纹理 / SPR 计算混合频率与 EV。
       它不等于完整求解器输出，但足以建立正确的决策框架。
+      <br>构建号：<b id="build-tag">—</b>
     </div>
   </div>
 </div>
@@ -248,12 +250,12 @@
   </div>
 </div>
 
-<script src="js/poker-eval.js"></script>
-<script src="js/preflop-table.js"></script>
-<script src="js/equity.js"></script>
-<script src="js/gto.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/recorder.js"></script>
-<script src="js/ui.js"></script>
+<script src="js/poker-eval.js?v=3"></script>
+<script src="js/preflop-table.js?v=3"></script>
+<script src="js/equity.js?v=3"></script>
+<script src="js/gto.js?v=3"></script>
+<script src="js/engine.js?v=3"></script>
+<script src="js/recorder.js?v=3"></script>
+<script src="js/ui.js?v=3"></script>
 </body>
 </html>

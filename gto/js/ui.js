@@ -3,10 +3,10 @@
  */
 (function () {
   'use strict';
-  var PE = PokerEval, PT = PreflopTable, EQ = Equity, GTO = GTO_NS(), Engine = EngineNS(), Recorder = RecNS();
-  function GTO_NS() { return window.GTO; }
-  function EngineNS() { return window.Engine; }
-  function RecNS() { return window.Recorder; }
+  // 用 window.X 取值：脚本没加载/被缓存成旧版时只会得到 undefined，
+  // 而不会直接抛 ReferenceError 让整个 UI 静默白屏（启动自检会给出可见提示）。
+  var PE = window.PokerEval, PT = window.PreflopTable, EQ = window.Equity,
+    GTO = window.GTO, Engine = window.Engine, Recorder = window.Recorder;
 
   var HERO = 0, AI = 1;
   var VIEWS = ['game', 'range', 'review', 'replay'];
@@ -86,10 +86,55 @@
   }
 
   var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------------- 启动自检 ----------------
+   * 部署后最常见的问题是「index.html 与 js 版本不一致」或「浏览器缓存了旧文件」，
+   * 表现为页面白屏、点什么都没反应。这里主动检查，把问题直接显示给用户。 */
+  var BUILD = (document.body && document.body.getAttribute('data-build')) || '未知';
+  var REQUIRED_IDS = [
+    'app-title', 'table-area', 'seats-top', 'seats-left', 'seats-right', 'seats-bottom',
+    'street-label', 'board-cards', 'pot-display',
+    'replay-table', 'r-seats-top', 'r-seats-left', 'r-seats-right', 'r-seats-bottom',
+    'r-street', 'r-board', 'r-pot',
+    'seg-players', 'seg-diff', 'seg-speed', 'sel-stack', 'build-tag'
+  ];
+  function missingIds() {
+    return REQUIRED_IDS.filter(function (id) { return !$(id); });
+  }
+  function showFatal(msg) {
+    if ($('fatal-box')) return;
+    var box = document.createElement('div');
+    box.id = 'fatal-box';
+    box.className = 'fatal';
+    box.innerHTML =
+      '<div class="fatal-card">' +
+      '<h3>页面启动失败</h3>' +
+      '<p class="msg">' + esc(msg) + '</p>' +
+      '<p class="hint">最常见原因是浏览器或托管平台缓存了旧版本文件：' +
+      'index.html 是新的，但 js / css 还是旧的（或反过来）。' +
+      '点下面的按钮强制刷新；若仍不行，请在浏览器里清除该站点的缓存，或换无痕模式打开。</p>' +
+      '<p class="hint">当前构建号：<b>' + esc(BUILD) + '</b></p>' +
+      '<button class="btn primary" id="fatal-reload">强制刷新</button>' +
+      '</div>';
+    (document.body || document.documentElement).appendChild(box);
+    var btn = $('fatal-reload');
+    if (btn) btn.onclick = function () {
+      var sep = location.search ? '&' : '?';
+      location.replace(location.pathname + location.search + sep + '_cb=' + Date.now());
+    };
+  }
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
+  }
+
+  // 遍历分段控件里的按钮；容器不存在时静默跳过，避免旧版 HTML 直接让初始化崩掉
+  function eachSegBtn(id, fn) {
+    var el = $(id);
+    if (!el) return;
+    Array.prototype.forEach.call(el.querySelectorAll('button'), fn);
   }
 
   // ---------------- 牌渲染 ----------------
@@ -1230,31 +1275,32 @@
     // 设置弹窗
     $('sw-coach').onclick = function () { S.coach = !S.coach; this.classList.toggle('on', S.coach); };
     $('sw-peek').onclick = function () { S.peek = !S.peek; this.classList.toggle('on', S.peek); renderTable(); renderReplayFrame(); };
-    Array.prototype.forEach.call($('seg-players').querySelectorAll('button'), function (b) {
+    eachSegBtn('seg-players', function (b) {
       b.onclick = function () {
-        Array.prototype.forEach.call($('seg-players').querySelectorAll('button'), function (x) { x.classList.remove('on'); });
+        eachSegBtn('seg-players', function (x) { x.classList.remove('on'); });
         b.classList.add('on');
       };
     });
-    Array.prototype.forEach.call($('seg-diff').querySelectorAll('button'), function (b) {
+    eachSegBtn('seg-diff', function (b) {
       b.onclick = function () {
-        Array.prototype.forEach.call($('seg-diff').querySelectorAll('button'), function (x) { x.classList.remove('on'); });
+        eachSegBtn('seg-diff', function (x) { x.classList.remove('on'); });
         b.classList.add('on');
       };
     });
-    Array.prototype.forEach.call($('seg-speed').querySelectorAll('button'), function (b) {
+    eachSegBtn('seg-speed', function (b) {
       b.onclick = function () {
-        Array.prototype.forEach.call($('seg-speed').querySelectorAll('button'), function (x) { x.classList.remove('on'); });
+        eachSegBtn('seg-speed', function (x) { x.classList.remove('on'); });
         b.classList.add('on');
       };
     });
     $('btn-apply-settings').onclick = function () {
-      var d = $('seg-diff').querySelector('.on');
-      var sp = $('seg-speed').querySelector('.on');
+      var dEl = $('seg-diff'), spEl = $('seg-speed'), pbEl = $('seg-players'), stEl = $('sel-stack');
+      var d = dEl ? dEl.querySelector('.on') : null;
+      var sp = spEl ? spEl.querySelector('.on') : null;
       S.difficulty = d ? d.getAttribute('data-d') : S.difficulty;
       S.speed = sp ? Number(sp.getAttribute('data-s')) : S.speed;
-      S.stackBB = Number($('sel-stack').value);
-      var pb = $('seg-players').querySelector('.on');
+      S.stackBB = stEl ? Number(stEl.value) : S.stackBB;
+      var pb = pbEl ? pbEl.querySelector('.on') : null;
       var newSize = pb ? Number(pb.getAttribute('data-p')) : S.tableSize;
       saveSettings();
       if (S.game) S.game.difficulty = S.difficulty;
@@ -1359,20 +1405,24 @@
   }
 
   function applySettingsToUI() {
-    $('btn-coach-toggle').classList.toggle('active', S.coach);
-    $('btn-coach-toggle').title = S.coach ? '教练模式：开启（点击进入考试模式）' : '教练模式：关闭（考试模式）';
-    $('sw-coach').classList.toggle('on', S.coach);
-    $('sw-peek').classList.toggle('on', S.peek);
-    Array.prototype.forEach.call($('seg-diff').querySelectorAll('button'), function (b) {
+    var ct = $('btn-coach-toggle');
+    if (ct) {
+      ct.classList.toggle('active', S.coach);
+      ct.title = S.coach ? '教练模式：开启（点击进入考试模式）' : '教练模式：关闭（考试模式）';
+    }
+    if ($('sw-coach')) $('sw-coach').classList.toggle('on', S.coach);
+    if ($('sw-peek')) $('sw-peek').classList.toggle('on', S.peek);
+    eachSegBtn('seg-diff', function (b) {
       b.classList.toggle('on', b.getAttribute('data-d') === S.difficulty);
     });
-    Array.prototype.forEach.call($('seg-speed').querySelectorAll('button'), function (b) {
+    eachSegBtn('seg-speed', function (b) {
       b.classList.toggle('on', Number(b.getAttribute('data-s')) === S.speed);
     });
-    Array.prototype.forEach.call($('seg-players').querySelectorAll('button'), function (b) {
+    eachSegBtn('seg-players', function (b) {
       b.classList.toggle('on', Number(b.getAttribute('data-p')) === S.tableSize);
     });
-    $('sel-stack').value = String(S.stackBB);
+    if ($('sel-stack')) $('sel-stack').value = String(S.stackBB);
+    if ($('build-tag')) $('build-tag').textContent = BUILD;
     renderRangeModes();
   }
 
@@ -1418,8 +1468,33 @@
     PE: PE, Recorder: Recorder, Engine: Engine, GTO: GTO
   };
 
-  // 启动
+  // ---------------- 启动 ----------------
+  function boot() {
+    try {
+      var missMod = [];
+      if (!PE) missMod.push('poker-eval.js');
+      if (!PT) missMod.push('preflop-table.js');
+      if (!EQ) missMod.push('equity.js');
+      if (!GTO) missMod.push('gto.js');
+      if (!Engine) missMod.push('engine.js');
+      if (!Recorder) missMod.push('recorder.js');
+      if (missMod.length) {
+        showFatal('以下脚本没有加载到：' + missMod.join('、') + '。可能是部署时文件缺失，或浏览器缓存了旧版本。');
+        return;
+      }
+      var miss = missingIds();
+      if (miss.length) {
+        showFatal('index.html 与脚本版本不一致，缺少元素：' + miss.join('、') + '。');
+        return;
+      }
+      init();
+    } catch (e) {
+      showFatal('初始化异常：' + ((e && e.message) || String(e)));
+      throw e;
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else init();
+    document.addEventListener('DOMContentLoaded', boot);
+  } else boot();
 })();

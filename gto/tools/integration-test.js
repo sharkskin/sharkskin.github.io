@@ -174,7 +174,9 @@ async function runSuite(n) {
   var usedIds = {};
   var re2 = /\$\('([^']+)'\)/g;
   while ((m = re2.exec(ui))) usedIds[m[1]] = true;
-  var missing = Object.keys(usedIds).filter(function (k) { return !htmlIds[k]; });
+  // 运行时由 JS 动态创建、本来就不该出现在 index.html 里的元素
+  var DYNAMIC_IDS = { 'fatal-box': 1, 'fatal-reload': 1 };
+  var missing = Object.keys(usedIds).filter(function (k) { return !htmlIds[k] && !DYNAMIC_IDS[k]; });
   check(missing.length === 0, 'ui.js 引用了不存在的元素 ID: ' + missing.join(', '));
   console.log('ui.js 引用 ' + Object.keys(usedIds).length + ' 个 ID，缺失 ' + missing.length +
     (missing.length ? ' → ' + missing.join(', ') : ''));

@@ -90,7 +90,10 @@ async function measureLayout(page, containerSel) {
       chipHero: document.querySelector('#pseat-0 .ch').textContent.trim(),
       opts: q('opt-list').children.length,
       equity: q('stat-equity').textContent,
-      reasons: q('reasons').children.length
+      reasons: q('reasons').children.length,
+      fatal: !!q('fatal-box'),
+      build: q('build-tag').textContent.trim(),
+      bodyBuild: document.body.getAttribute('data-build')
     };
   });
   console.log('   ', JSON.stringify(init));
@@ -101,6 +104,9 @@ async function measureLayout(page, containerSel) {
   check(init.opts > 0, '教练面板给出 ' + init.opts + ' 个行动选项');
   check(init.reasons > 0, '教练面板给出 ' + init.reasons + ' 条理由');
   check(/%$/.test(init.equity), '胜率已计算: ' + init.equity);
+  check(!init.fatal, '启动自检通过（无版本不一致提示）');
+  check(init.build === init.bodyBuild && init.build !== '—',
+    '构建号一致: ' + init.build);
 
   // ---- 2. 自动打牌 ----
   console.log('\n[2] 自动对局（模拟点击）');
