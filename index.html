@@ -5,144 +5,391 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>心脏植入式电子器械（CIED）数据看板</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    background: linear-gradient(135deg, #0f1923 0%, #1a2a3a 100%);
-    color: #e0e8f0;
-    min-height: 100vh;
-    display: flex;
-        flex-direction: column;
-        align-items: center;
-    padding: 60px 24px;
+  :root{
+    --paper:#F4F6F7;        /* 冷白记录纸 */
+    --sheet:#FBFCFC;        /* 卡片 / 纸面 */
+    --ink:#16293F;          /* 深墨蓝，BSC 系 */
+    --ink-2:#5C6E80;        /* 次级文字 */
+    --ink-3:#8A99A8;        /* 弱文字 */
+    --rule:#D8E1E7;         /* 结构线 */
+    --grid:#F1E6E4;         /* 心电纸小格（极淡暖红） */
+    --grid-2:#E9D8D5;       /* 心电纸大格 */
+    --trace:#0E5C8C;        /* 唯一强调：描记蓝 */
+    --trace-soft:#E7F1F7;
+    --f-display:"Songti SC","STSong","SimSun","Noto Serif CJK SC",serif;
+    --f-body:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    --f-mono:ui-monospace,"SFMono-Regular","Cascadia Code","Consolas",monospace;
   }
-  .header { text-align: center; margin-bottom: 48px; max-width: 760px; }
-  .header h1 {
-    font-size: 30px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    background: linear-gradient(90deg, #4fc3f7, #81d4fa, #b3e5fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--f-body);font-size:15px;line-height:1.65;
+    -webkit-font-smoothing:antialiased;
   }
-  .header .sub {
-    font-size: 14px;
-    color: #7a9bb5;
-    margin-top: 12px;
-    line-height: 1.7;
-    letter-spacing: 0.5px;
+  a{color:inherit}
+  :focus-visible{outline:2px solid var(--trace);outline-offset:3px;border-radius:2px}
+
+  .ix-wrap{max-width:1120px;margin:0 auto;padding:0 32px 72px}
+
+  /* ── 顶栏：仪器状态条 ───────────────────────────── */
+  .ix-topbar{
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+    padding:18px 0 16px;border-bottom:1px solid var(--rule);
+    font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;
+    color:var(--ink-3);text-transform:uppercase;
   }
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 20px;
-    width: 100%;
-    max-width: 900px;
+  .ix-topbar b{color:var(--trace);font-weight:600;letter-spacing:.16em}
+  .ix-topbar .ix-right{display:flex;gap:20px;align-items:center}
+
+  /* ── Hero ──────────────────────────────────────── */
+  .ix-hero{padding:56px 0 0}
+  .ix-kicker{
+    font-family:var(--f-mono);font-size:11px;letter-spacing:.2em;
+    color:var(--trace);text-transform:uppercase;margin:0 0 20px;
   }
-  .card {
-    background: linear-gradient(145deg, #1a2a3a, #162232);
-    border: 1px solid rgba(79, 195, 247, .12);
-    border-radius: 14px;
-    padding: 26px 24px;
-    text-decoration: none;
-    color: #e0e8f0;
-    position: relative;
-    overflow: hidden;
-    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  .ix-hero h1{
+    margin:0;font-family:var(--f-display);font-weight:400;
+    font-size:clamp(32px,4.6vw,54px);line-height:1.28;letter-spacing:.045em;
+    color:var(--ink);
   }
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #4fc3f7, transparent);
+  .ix-lede{
+    margin:18px 0 0;max-width:660px;font-size:15px;color:var(--ink-2);line-height:1.8;
   }
-  .card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(79, 195, 247, .4);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+
+  /* ── 标志性元素：ECG 走纸描记带 ─────────────────── */
+  .ix-trace{
+    margin:44px 0 0;border:1px solid var(--rule);border-radius:2px;
+    background-color:var(--sheet);
+    background-image:
+      linear-gradient(to right,var(--grid) 1px,transparent 1px),
+      linear-gradient(to bottom,var(--grid) 1px,transparent 1px),
+      linear-gradient(to right,var(--grid-2) 1px,transparent 1px),
+      linear-gradient(to bottom,var(--grid-2) 1px,transparent 1px);
+    background-size:10px 10px,10px 10px,50px 50px,50px 50px;
+    overflow:hidden;
   }
-  .card .idx {
-    font-size: 12px;
-    color: #4fc3f7;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
+  .ix-trace-head{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 18px;border-bottom:1px solid var(--rule);
+    background:rgba(251,252,252,.82);
+    font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;
+    color:var(--ink-3);text-transform:uppercase;
   }
-  .card .title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #e0f7fa;
-    margin-bottom: 10px;
+  .ix-trace-head .ix-live{display:flex;align-items:center;gap:8px;color:var(--trace)}
+  .ix-live i{width:6px;height:6px;border-radius:50%;background:var(--trace);display:block}
+  .ix-ecg{display:block;width:100%;height:auto}
+  .ix-beat{
+    fill:none;stroke:var(--trace);stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;
+    /* 基础态=完整可见；动画只作入场描线，禁用动画/时序异常也不会留空白 */
+    stroke-dasharray:400;stroke-dashoffset:0;
+    animation:ix-draw 1.4s cubic-bezier(.32,.72,.35,1) backwards;
   }
-  .card .desc {
-    font-size: 13px;
-    color: #8ba9c0;
-    line-height: 1.6;
+  .ix-beat:nth-of-type(2){animation-delay:.12s}
+  .ix-beat:nth-of-type(3){animation-delay:.24s}
+  .ix-beat:nth-of-type(4){animation-delay:.36s}
+  .ix-beat:nth-of-type(5){animation-delay:.48s}
+  @keyframes ix-draw{from{stroke-dashoffset:400}to{stroke-dashoffset:0}}
+  .ix-spike .ix-dot{fill:var(--sheet);stroke:var(--trace);stroke-width:1.8;transition:fill .22s ease,r .22s ease}
+  .ix-spike .ix-halo{fill:none;stroke:var(--trace);stroke-width:1.2;opacity:0;transform-origin:center;transition:opacity .3s ease}
+  .ix-spike.is-lit .ix-dot{fill:var(--trace);r:4.6}
+  .ix-spike.is-lit .ix-halo{opacity:.5;animation:ix-pulse 1.1s ease-out}
+  @keyframes ix-pulse{from{transform:scale(.55);opacity:.65}to{transform:scale(2.1);opacity:0}}
+  .ix-ticks{
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+    border-top:1px solid var(--rule);background:rgba(251,252,252,.82);
   }
-  .card .go {
-    margin-top: 16px;
-    font-size: 13px;
-    color: #4fc3f7;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .ix-tick{
+    padding:10px 4px 12px;text-align:center;min-width:0;overflow-wrap:anywhere;
+    font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;
+    color:var(--ink-3);transition:color .22s ease,background .22s ease;
   }
-  .card .go::after { content: '→'; }
-  .footer {
-    margin-top: 56px;
-    font-size: 12px;
-    color: #4a6577;
-    letter-spacing: 1px;
+  .ix-tick + .ix-tick{border-left:1px solid var(--rule)}
+  .ix-tick.is-lit{color:var(--trace);background:var(--trace-soft);font-weight:600}
+  .ix-trace-note{
+    padding:9px 18px;border-top:1px solid var(--rule);
+    font-size:11.5px;color:var(--ink-3);background:rgba(251,252,252,.82);
+  }
+
+  /* ── 工具栏：检索 + 分类 ────────────────────────── */
+  .ix-toolbar{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+    margin:44px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--rule);
+  }
+  .ix-search{position:relative;flex:1 1 260px;max-width:340px}
+  .ix-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-3)}
+  .ix-search input{
+    width:100%;height:40px;padding:0 42px 0 36px;
+    border:1px solid var(--rule);border-radius:2px;background:var(--sheet);
+    font-family:var(--f-body);font-size:13.5px;color:var(--ink);
+    transition:border-color .2s ease,box-shadow .2s ease;
+  }
+  .ix-search input::placeholder{color:var(--ink-3)}
+  .ix-search input:focus{outline:none;border-color:var(--trace);box-shadow:0 0 0 3px var(--trace-soft)}
+  .ix-search kbd{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    font-family:var(--f-mono);font-size:10px;color:var(--ink-3);
+    border:1px solid var(--rule);border-radius:2px;padding:1px 5px;background:var(--paper);
+  }
+  .ix-chips{display:flex;flex-wrap:wrap;gap:7px}
+  .ix-chip{
+    appearance:none;cursor:pointer;
+    border:1px solid var(--rule);border-radius:2px;background:transparent;
+    padding:7px 12px;font-family:var(--f-body);font-size:12.5px;color:var(--ink-2);
+    transition:all .18s ease;
+  }
+  .ix-chip span{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);margin-left:5px}
+  .ix-chip:hover{border-color:var(--trace);color:var(--trace)}
+  .ix-chip.is-on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .ix-chip.is-on span{color:rgba(255,255,255,.62)}
+  .ix-result{
+    font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:var(--ink-3);
+    margin:0 0 16px;
+  }
+  .ix-result b{color:var(--trace);font-weight:600}
+
+  /* ── 资料条目 ──────────────────────────────────── */
+  .ix-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .ix-entry{
+    position:relative;display:flex;flex-direction:column;
+    min-height:196px;padding:22px 22px 18px;
+    background:var(--sheet);border:1px solid var(--rule);border-radius:2px;
+    text-decoration:none;overflow:hidden;
+    transition:border-color .22s ease,box-shadow .22s ease,transform .22s ease;
+  }
+  .ix-entry::before{
+    content:"";position:absolute;top:0;left:0;height:2px;width:34px;
+    background:var(--trace);transition:width .32s cubic-bezier(.32,.72,.35,1);
+  }
+  .ix-entry:hover,.ix-entry:focus-visible{
+    border-color:var(--trace);transform:translateY(-3px);
+    box-shadow:0 10px 26px rgba(22,41,63,.09);
+  }
+  .ix-entry:hover::before,.ix-entry:focus-visible::before{width:100%}
+  .ix-cat{
+    font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;
+    color:var(--trace);text-transform:uppercase;margin:0 0 12px;
+  }
+  .ix-entry h2{
+    margin:0 0 10px;font-size:17px;font-weight:600;line-height:1.5;letter-spacing:.01em;
+  }
+  .ix-desc{margin:0;font-size:13px;line-height:1.72;color:var(--ink-2);flex:1}
+  .ix-foot{
+    display:flex;justify-content:space-between;align-items:flex-end;gap:10px;
+    margin-top:20px;padding-top:12px;border-top:1px solid var(--rule);
+  }
+  .ix-meta{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);line-height:1.6}
+  .ix-go{font-family:var(--f-mono);font-size:11px;color:var(--trace);white-space:nowrap;letter-spacing:.04em}
+
+  .ix-empty{
+    padding:48px 20px;text-align:center;border:1px dashed var(--rule);border-radius:2px;
+    color:var(--ink-2);font-size:14px;
+  }
+  .ix-empty button{
+    margin-left:10px;cursor:pointer;background:none;border:none;
+    color:var(--trace);font-family:var(--f-body);font-size:13px;text-decoration:underline;
+  }
+
+  .ix-footer{
+    margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+    font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-3);
+  }
+
+  @media(max-width:900px){ .ix-grid{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:600px){
+    .ix-wrap{padding:0 18px 48px}
+    .ix-hero{padding-top:38px}
+    .ix-grid{grid-template-columns:1fr}
+    .ix-topbar .ix-right span:first-child{display:none}
+    .ix-toolbar{margin-top:32px;flex-direction:column;align-items:stretch}
+    .ix-search{max-width:none;flex-basis:auto;width:100%}
+    .ix-chips{min-width:0;width:100%}
+    .ix-chip{flex:0 1 auto}
+    .ix-tick{font-size:9px;letter-spacing:0;padding:8px 2px 10px}
+    .ix-trace-note{font-size:11px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+    .ix-beat{stroke-dashoffset:0}
   }
 </style>
 </head>
 <body>
-  <div class="header">
-    <h1>CIED 数据看板</h1>
-    <p class="sub">
-      心脏植入式电子器械（Cardiac Implantable Electronic Devices）相关临床与价格数据可视化合集。<br>
-      涵盖 ATP 临床研究结果、跨器械对比分析、浙江带量采购市场价格分布，以及双腔无导线起搏器的系统学习资料。<br>
-      点击下方卡片查看对应内容。
-    </p>
+<div class="ix-wrap">
+
+  <div class="ix-topbar">
+    <div><b>CIED</b> &nbsp;/&nbsp; 资料索引</div>
+    <div class="ix-right"><span>05 份资料</span><span>内部使用</span></div>
   </div>
 
-  <div class="cards">
-    <a class="card" href="atp.html" target="_blank">
-      <div class="idx">01</div>
-      <div class="title">ATP 临床研究数据可视化</div>
-      <div class="desc">6 项 ATP 临床研究三项核心指标对比，覆盖 TV ICD、S-ICD、EV ICD 三类器械。</div>
-      <div class="go">查看</div>
-    </a>
+  <header class="ix-hero">
+    <p class="ix-kicker">Cardiac Implantable Electronic Devices · Data Archive</p>
+    <h1>心脏植入式电子器械<br>数据看板</h1>
+    <p class="ix-lede">5 份资料，按临床研究、市场价格、系统学习与现场行动归类。检索或按类别筛选后打开对应内容。</p>
+  </header>
 
-    <a class="card" href="atp2.html" target="_blank">
-      <div class="idx">02</div>
-      <div class="title">ATP 临床研究三项核心指标对比</div>
-      <div class="desc">ATP 研究关键指标对比视图，以卡片与分组方式呈现各项研究数据。</div>
-      <div class="go">查看</div>
-    </a>
+  <!-- 标志性元素：5 个心动周期 = 5 份资料，卡片 hover 时对应 R 波点亮 -->
+  <section class="ix-trace" aria-label="资料索引节律示意图">
+    <div class="ix-trace-head">
+      <span>Lead II &nbsp;·&nbsp; 25 mm/s &nbsp;·&nbsp; 10 mm/mV</span>
+      <span class="ix-live"><i></i>5 条记录</span>
+    </div>
+    <svg class="ix-ecg" viewBox="0 0 1000 120" role="img" aria-label="五个心动周期的心电图节律描记，分别对应五份资料">
+      <!-- 单周期：等电位 → P 波 → PR 段 → QRS 波群 → ST 段 → T 波 -->
+      <path class="ix-beat" d="M0,70 L28,70 Q40,54 52,70 L82,70 L88,74 L96,26 L104,84 L110,70 L132,70 Q152,44 172,70 L200,70"/>
+      <path class="ix-beat" transform="translate(200,0)" d="M0,70 L28,70 Q40,54 52,70 L82,70 L88,74 L96,26 L104,84 L110,70 L132,70 Q152,44 172,70 L200,70"/>
+      <path class="ix-beat" transform="translate(400,0)" d="M0,70 L28,70 Q40,54 52,70 L82,70 L88,74 L96,26 L104,84 L110,70 L132,70 Q152,44 172,70 L200,70"/>
+      <path class="ix-beat" transform="translate(600,0)" d="M0,70 L28,70 Q40,54 52,70 L82,70 L88,74 L96,26 L104,84 L110,70 L132,70 Q152,44 172,70 L200,70"/>
+      <path class="ix-beat" transform="translate(800,0)" d="M0,70 L28,70 Q40,54 52,70 L82,70 L88,74 L96,26 L104,84 L110,70 L132,70 Q152,44 172,70 L200,70"/>
+      <g class="ix-spike"><circle class="ix-halo" cx="96"  cy="26" r="9"/><circle class="ix-dot" cx="96"  cy="26" r="3.6"/></g>
+      <g class="ix-spike"><circle class="ix-halo" cx="296" cy="26" r="9"/><circle class="ix-dot" cx="296" cy="26" r="3.6"/></g>
+      <g class="ix-spike"><circle class="ix-halo" cx="496" cy="26" r="9"/><circle class="ix-dot" cx="496" cy="26" r="3.6"/></g>
+      <g class="ix-spike"><circle class="ix-halo" cx="696" cy="26" r="9"/><circle class="ix-dot" cx="696" cy="26" r="3.6"/></g>
+      <g class="ix-spike"><circle class="ix-halo" cx="896" cy="26" r="9"/><circle class="ix-dot" cx="896" cy="26" r="3.6"/></g>
+    </svg>
+    <div class="ix-ticks">
+      <div class="ix-tick">ATP 研究</div>
+      <div class="ix-tick">指标对比</div>
+      <div class="ix-tick">价格分布</div>
+      <div class="ix-tick">系统学习</div>
+      <div class="ix-tick">现场 FAQ</div>
+    </div>
+    <div class="ix-trace-note">节律为示意描记，每个 R 波对应下方一份资料；指向条目可定位。</div>
+  </section>
 
-    <a class="card" href="price.html" target="_blank">
-      <div class="idx">03</div>
-      <div class="title">浙江带量采购 · 市场价格分布分析</div>
-      <div class="desc">各品类、各厂商价格分布区间与可视化图表，含型号明细与价格对比。</div>
-      <div class="go">查看</div>
-    </a>
-
-    <a class="card" href="lcp_learning.html" target="_blank">
-      <div class="idx">04</div>
-      <div class="title">双腔无导线起搏器通信丢失 · 系统学习</div>
-      <div class="desc">基于期刊全文的系统学习整理：框架 / 术语 / 机制 / 病例 / 处理流程 / 行动规则 / 自检题库。</div>
-      <div class="go">查看</div>
-    </a>
-
-    <a class="card" href="accolade-smr6-faq-overview.html" target="_blank">
-      <div class="idx">05</div>
-      <div class="title">ACCOLADE SMR6 现场行动 FAQ｜材料概览</div>
-      <div class="desc">ACCOLADE SMR6 软件更新与召回相关的现场行动 FAQ，材料概览与要点梳理。</div>
-      <div class="go">查看</div>
-    </a>
+  <div class="ix-toolbar">
+    <div class="ix-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="ix-q" type="search" placeholder="检索资料名称、类别或关键词" aria-label="检索资料" autocomplete="off">
+      <kbd>/</kbd>
+    </div>
+    <div class="ix-chips" role="group" aria-label="按类别筛选">
+      <button class="ix-chip is-on" data-cat="all" aria-pressed="true">全部 <span>5</span></button>
+      <button class="ix-chip" data-cat="clinical" aria-pressed="false">临床研究 <span>2</span></button>
+      <button class="ix-chip" data-cat="market" aria-pressed="false">市场价格 <span>1</span></button>
+      <button class="ix-chip" data-cat="learning" aria-pressed="false">系统学习 <span>1</span></button>
+      <button class="ix-chip" data-cat="field" aria-pressed="false">现场行动 <span>1</span></button>
+    </div>
   </div>
 
-  <div class="footer">CIED Data Dashboard · 内部数据看板</div>
+  <p class="ix-result">显示 <b id="ix-count">5</b> / 5 份资料</p>
+
+  <main class="ix-grid" id="ix-grid">
+    <a class="ix-entry" href="atp.html" target="_blank" rel="noopener"
+       data-cat="clinical" data-peak="0"
+       data-search="ATP 临床研究 TV ICD S-ICD EV ICD PainFREE MADIT-RIT APPRAISE MODULAR PIVOTAL ENLIGHTEN 有效性 发作率 年化获益 SVG 柱状图">
+      <p class="ix-cat">临床研究 / Clinical</p>
+      <h2>ATP 临床研究数据可视化</h2>
+      <p class="ix-desc">6 项 ATP 关键研究的三项核心指标对比，覆盖 TV ICD、S-ICD、EV ICD 三类器械。</p>
+      <div class="ix-foot"><span class="ix-meta">6 项研究 · 3 类器械<br>SVG 静态图表</span><span class="ix-go">打开 ↗</span></div>
+    </a>
+
+    <a class="ix-entry" href="atp2.html" target="_blank" rel="noopener"
+       data-cat="clinical" data-peak="1"
+       data-search="ATP 三项核心指标 对比 图表 数据卡片 MADIT-RIT 器械 交互 Chart.js">
+      <p class="ix-cat">临床研究 / Clinical</p>
+      <h2>ATP 三项核心指标对比</h2>
+      <p class="ix-desc">同一组研究的交互式视图：3 张对比图表与 6 张研究数据卡片。</p>
+      <div class="ix-foot"><span class="ix-meta">3 张图表 · 6 张数据卡<br>交互式 HTML</span><span class="ix-go">打开 ↗</span></div>
+    </a>
+
+    <a class="ix-entry" href="price.html" target="_blank" rel="noopener"
+       data-cat="market" data-peak="2"
+       data-search="浙江 带量采购 价格分布 厂商 波科 BSC 美敦力 雅培 百多力 起搏器 ICD CRTD 品类 ECharts 交互">
+      <p class="ix-cat">市场价格 / Market</p>
+      <h2>浙江带量采购 · 价格分布</h2>
+      <p class="ix-desc">各品类、各厂商价格区间与型号明细，含可筛选的交互图表。</p>
+      <div class="ix-foot"><span class="ix-meta">4 组图表 · 品类/厂商<br>交互式 HTML</span><span class="ix-go">打开 ↗</span></div>
+    </a>
+
+    <a class="ix-entry" href="lcp_learning.html" target="_blank" rel="noopener"
+       data-cat="learning" data-peak="3"
+       data-search="双腔无导线起搏器 AVEIR DR 通信丢失 交界性心律 机制 术语 病例 处理流程 自检题库 系统学习">
+      <p class="ix-cat">系统学习 / Learning</p>
+      <h2>双腔无导线起搏器通信丢失</h2>
+      <p class="ix-desc">基于期刊全文的系统整理：框架、术语、机制、病例、处理流程与自检题库。</p>
+      <div class="ix-foot"><span class="ix-meta">7 个章节 · 3 例场景<br>零 JS 阅读页</span><span class="ix-go">打开 ↗</span></div>
+    </a>
+
+    <a class="ix-entry" href="accolade-smr6-faq-overview.html" target="_blank" rel="noopener"
+       data-cat="field" data-peak="4"
+       data-search="ACCOLADE SMR6 软件更新 召回 现场行动 FAQ 材料概览 术语 方法论 波科 BSC">
+      <p class="ix-cat">现场行动 / Field Action</p>
+      <h2>ACCOLADE SMR6 现场行动 FAQ</h2>
+      <p class="ix-desc">软件更新与召回相关 FAQ 的材料概览：知识骨架、术语表与下一步动作。</p>
+      <div class="ix-foot"><span class="ix-meta">FAQ 概览 · 术语表<br>含材料截图</span><span class="ix-go">打开 ↗</span></div>
+    </a>
+  </main>
+
+  <div class="ix-empty" id="ix-empty" hidden>没有匹配的资料。<button type="button" id="ix-clear">清除筛选</button></div>
+
+  <footer class="ix-footer">
+    <span>CIED DATA DASHBOARD · 内部数据看板</span>
+    <span>按 / 检索 · Esc 清空</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var q     = document.getElementById('ix-q');
+  var chips = [].slice.call(document.querySelectorAll('.ix-chip'));
+  var cards = [].slice.call(document.querySelectorAll('.ix-entry'));
+  var spikes= [].slice.call(document.querySelectorAll('.ix-spike'));
+  var ticks = [].slice.call(document.querySelectorAll('.ix-tick'));
+  var empty = document.getElementById('ix-empty');
+  var grid  = document.getElementById('ix-grid');
+  var count = document.getElementById('ix-count');
+  var cat   = 'all';
+
+  function norm(s){ return (s||'').toLowerCase().replace(/\s+/g,''); }
+  function apply(){
+    var term = norm(q.value), n = 0;
+    cards.forEach(function(c){
+      var ok = (cat === 'all' || c.getAttribute('data-cat') === cat) &&
+               (!term || norm(c.getAttribute('data-search') + c.textContent).indexOf(term) !== -1);
+      c.hidden = !ok;
+      if(ok) n++;
+    });
+    empty.hidden = n !== 0;
+    grid.hidden  = n === 0;
+    count.textContent = n;
+  }
+  function light(i,on){
+    if(spikes[i]) spikes[i].classList.toggle('is-lit',on);
+    if(ticks[i])  ticks[i].classList.toggle('is-lit',on);
+  }
+  function reset(){
+    q.value=''; cat='all';
+    chips.forEach(function(x,k){
+      x.classList.toggle('is-on',k===0);
+      x.setAttribute('aria-pressed',k===0?'true':'false');
+    });
+    apply();
+  }
+
+  q.addEventListener('input',apply);
+  chips.forEach(function(b){
+    b.addEventListener('click',function(){
+      chips.forEach(function(x){ x.classList.remove('is-on'); x.setAttribute('aria-pressed','false'); });
+      b.classList.add('is-on'); b.setAttribute('aria-pressed','true');
+      cat = b.getAttribute('data-cat'); apply();
+    });
+  });
+  cards.forEach(function(c){
+    var i = Number(c.getAttribute('data-peak'));
+    ['mouseenter','focus'].forEach(function(e){ c.addEventListener(e,function(){ light(i,true); }); });
+    ['mouseleave','blur'].forEach(function(e){ c.addEventListener(e,function(){ light(i,false); }); });
+  });
+  document.addEventListener('keydown',function(e){
+    var t = e.target.tagName;
+    if(e.key === '/' && t !== 'INPUT' && t !== 'TEXTAREA'){ e.preventDefault(); q.focus(); }
+    if(e.key === 'Escape' && document.activeElement === q){ q.value=''; apply(); q.blur(); }
+  });
+  document.getElementById('ix-clear').addEventListener('click',function(){ reset(); q.focus(); });
+})();
+</script>
 </body>
 </html>

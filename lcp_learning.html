@@ -417,5 +417,23 @@ code{background:#EEF3F9;padding:1px 5px;border-radius:4px;font-size:12.5px}
 <footer>
   数据来源：Heart Rhythm 官网全文 S1547-5271(26)02747-5（与用户提供 PDF 同篇）· 学习深度：系统学习 · 生成于 2026-10-02 · 零 JS 纯 SVG，可离线打开与打印
 </footer>
+
+<!-- CIED 看板 · 统一返回入口 -->
+<style>
+  .cd-back{position:fixed;left:18px;bottom:18px;z-index:9999;display:inline-flex;align-items:center;gap:7px;
+    padding:9px 15px;border-radius:999px;text-decoration:none;
+    background:#16293F;color:#fff;font:600 12.5px/1.2 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    letter-spacing:.02em;box-shadow:0 6px 22px rgba(16,32,52,.28);
+    border:1px solid rgba(255,255,255,.14);
+    transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+  .cd-back:hover{transform:translateY(-2px);background:#0E5C8C;box-shadow:0 10px 28px rgba(16,32,52,.34)}
+  .cd-back:focus-visible{outline:2px solid #4FC3F7;outline-offset:3px}
+  .cd-back span{font-size:15px;line-height:1}
+  @media(max-width:600px){.cd-back{left:12px;bottom:12px;padding:8px 13px;font-size:12px}}
+  @media print{.cd-back{display:none}}
+  @media(prefers-reduced-motion:reduce){.cd-back{transition:none}}
+</style>
+<a class="cd-back" href="index.html" aria-label="返回 CIED 数据看板"><span aria-hidden="true">←</span>返回看板</a>
+
 </body>
 </html>
