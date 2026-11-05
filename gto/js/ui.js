@@ -21,6 +21,7 @@
     difficulty: 'standard',
     speed: 700,
     stackBB: 100,
+    rebuyBB: 200,         // 归零后「重新买入」额度（BB），可在设置中调整
     tableSize: 2,         // 牌桌人数：2 / 3 / 4 / 6
     pending: null,        // hero 待决策 {state, advice}
     betMode: null,        // null | 'bet' | 'raise'
@@ -163,6 +164,7 @@
       if (d.difficulty) S.difficulty = d.difficulty;
       if (d.speed) S.speed = d.speed;
       if (d.stackBB) S.stackBB = d.stackBB;
+      if (d.rebuyBB) S.rebuyBB = d.rebuyBB;
       if (d.tableSize) S.tableSize = d.tableSize;
       else if (d.players) S.tableSize = d.players;
     } catch (e) { }
@@ -171,7 +173,7 @@
     try {
       localStorage.setItem(LS_SET, JSON.stringify({
         coach: S.coach, peek: S.peek, difficulty: S.difficulty, speed: S.speed,
-        stackBB: S.stackBB, tableSize: S.tableSize
+        stackBB: S.stackBB, rebuyBB: S.rebuyBB, tableSize: S.tableSize
       }));
     } catch (e) { }
   }
@@ -1292,12 +1294,13 @@
       };
     });
     $('btn-apply-settings').onclick = function () {
-      var dEl = $('seg-diff'), spEl = $('seg-speed'), pbEl = $('seg-players'), stEl = $('sel-stack');
+      var dEl = $('seg-diff'), spEl = $('seg-speed'), pbEl = $('seg-players'), stEl = $('sel-stack'), rbEl = $('sel-rebuy');
       var d = dEl ? dEl.querySelector('.on') : null;
       var sp = spEl ? spEl.querySelector('.on') : null;
       S.difficulty = d ? d.getAttribute('data-d') : S.difficulty;
       S.speed = sp ? Number(sp.getAttribute('data-s')) : S.speed;
       S.stackBB = stEl ? Number(stEl.value) : S.stackBB;
+      S.rebuyBB = rbEl ? Number(rbEl.value) : S.rebuyBB;
       var pb = pbEl ? pbEl.querySelector('.on') : null;
       var newSize = pb ? Number(pb.getAttribute('data-p')) : S.tableSize;
       saveSettings();
@@ -1420,6 +1423,7 @@
       b.classList.toggle('on', Number(b.getAttribute('data-p')) === S.tableSize);
     });
     if ($('sel-stack')) $('sel-stack').value = String(S.stackBB);
+    if ($('sel-rebuy')) $('sel-rebuy').value = String(S.rebuyBB);
     if ($('build-tag')) $('build-tag').textContent = BUILD;
     renderRangeModes();
   }
@@ -1487,13 +1491,20 @@
       }
       return;
     }
-    var rebuyBB = 200;
+    var rebuyBB = S.rebuyBB || 200;
     var rebuyChips = rebuyBB * g.bb;
     var rows = S.brokeSeats.map(function (seat) {
+      var isMe = seat === HERO;
+      var buttons = '<button class="btn rebuy" data-seat="' + seat + '" data-out="0">重新买入 ' + rebuyBB + ' BB（' + rebuyChips + ' 筹码）</button>';
+      if (isMe) {
+        // 人类玩家输光：提供「买入」或「重开（新的一局）」二选一
+        buttons += '<button class="btn primary" data-seat="' + seat + '" data-restart="1">重开（新的一局）</button>';
+      } else {
+        buttons += '<button class="btn ghost" data-seat="' + seat + '" data-out="1">不买入（出局）</button>';
+      }
       return '<div class="broke-row">' +
         '<span class="broke-who">' + esc(seatName(seat)) + ' 筹码耗尽</span>' +
-        '<button class="btn rebuy" data-seat="' + seat + '" data-out="0">重新买入 ' + rebuyBB + ' BB（' + rebuyChips + ' 筹码）</button>' +
-        '<button class="btn ghost" data-seat="' + seat + '" data-out="1">不买入（出局）</button>' +
+        buttons +
         '</div>';
     }).join('');
     panel.innerHTML = '<div class="broke-title">有玩家筹码已耗尽，请选择处理方式（其他玩家继续）：</div>' + rows;
@@ -1503,9 +1514,17 @@
     Array.prototype.forEach.call(btns, function (b) {
       b.onclick = function () {
         var seat = Number(b.getAttribute('data-seat'));
+        if (b.getAttribute('data-restart') === '1') {
+          // 人类玩家选择重开：全员恢复起始筹码，开始新的一局
+          newGame(true);
+          panel.style.display = 'none';
+          panel.innerHTML = '';
+          toast('已重开新的一局');
+          return;
+        }
         var out = b.getAttribute('data-out') === '1';
         if (out) g.chips[seat] = 0;            // 保持 0：下一手被自动排除（出局），其余人继续
-        else g.chips[seat] = rebuyBB * g.bb;   // 重新买入 200 BB
+        else g.chips[seat] = rebuyBB * g.bb;   // 重新买入配置的额度
         var i = S.brokeSeats.indexOf(seat);
         if (i >= 0) S.brokeSeats.splice(i, 1);
         saveSession();
