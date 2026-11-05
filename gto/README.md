@@ -98,6 +98,7 @@ node tools/gen-preflop-table.js 40000   # 重新生成胜率表（约 38 秒）
 node tools/sim-test.js 250              # 引擎自检：2/3/4/6 人 × 三档难度各打 250 手
 node tools/integration-test.js          # 集成测试
 node tools/browser-test.js              # 浏览器实测（需 playwright-core + 本机 Chrome）
+node tools/live-smoke.js [url]          # 线上冒烟（对已发布地址验证启动 / 多人桌 / 回看）
 ```
 
 测试覆盖：无死循环、筹码守恒、逐池摊牌胜负判定、边池与未跟注退还、存档往返一致性、分享码跨端还原、DOM 引用完整性、渲染与数据一致性、座位布局无重叠/无越界、零 JS 运行时错误。

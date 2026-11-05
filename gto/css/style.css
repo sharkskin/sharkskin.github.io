@@ -325,6 +325,20 @@ input[type=range]::-webkit-slider-thumb {
 .btn.warn { background: #7a3a2a; }
 .btn .sub { display: block; font-size: 10px; font-weight: 400; opacity: .85; }
 
+/* ---------- 破产玩家处理面板 ---------- */
+.broke-panel {
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.broke-title { font-size: 13px; font-weight: 700; color: var(--warn); margin-bottom: 8px; }
+.broke-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+.broke-who { font-size: 13px; color: var(--text); font-weight: 600; min-width: 96px; }
+.broke-row .btn { flex: 0 0 auto; font-size: 12px; padding: 8px 12px; }
+.btn.rebuy { background: linear-gradient(135deg, #2fc76d, #1e9e54); color: #fff; font-weight: 700; }
+
 /* ---------- 结果提示 ---------- */
 .result-banner {
   margin: 8px 12px; padding: 10px 12px; border-radius: 10px;

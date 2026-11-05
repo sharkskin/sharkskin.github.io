@@ -238,6 +238,8 @@
     S.handOver = true;
     S.pending = null;
     S.betMode = null;
+    S.brokeSeats = [];
+    S.endGame = false;
     // 新局与旧牌局无关，清空回看里的旧选中
     stopPlay();
     S.replay.source = 'self';
@@ -563,6 +565,8 @@
       $(id).disabled = dis;
     });
     $('btn-next').disabled = !S.handOver;
+    // 有待处理破产玩家或练习已结束（活跃<2）时，禁止直接「下一手」
+    if ((S.brokeSeats && S.brokeSeats.length) || S.endGame) $('btn-next').disabled = true;
   }
 
   function renderBetPresets() {
@@ -646,17 +650,11 @@
       '</div>';
     $('result-banner').innerHTML = html;
 
-    // 有人筹码耗尽 → 全员自动补满（练习模式）
-    var broke = false;
-    for (var s = 0; s < g.n; s++) if (g.chips[s] <= 0) broke = true;
-    if (broke) {
-      setTimeout(function () {
-        for (var q = 0; q < g.n; q++) g.chips[q] = g.startStack;
-        saveSession();
-        renderTable();
-        toast('筹码已自动补满，继续练习');
-      }, 700);
-    }
+    // 破产玩家处理：不再全员自动补满，改为逐个让用户选择「买入/不买入」
+    // 归零玩家下一手会被 engine 的 inHand[i] = chips[i] > 0 自动排除（其他人继续）
+    S.brokeSeats = [];
+    for (var bs = 0; bs < g.n; bs++) if (g.chips[bs] <= 0) S.brokeSeats.push(bs);
+    renderBrokePanel();
   }
 
   // ---------------- 起手牌范围表 ----------------
@@ -1460,6 +1458,63 @@
     t.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2000);
+  }
+
+  // ---------------- 破产玩家处理面板 ----------------
+  function seatName(seat) {
+    if (seat === HERO) return '你';
+    var lbl = S.game.cur && S.game.cur.posLabel[seat];
+    if (lbl) return lbl;
+    return '座位' + seat;
+  }
+
+  function renderBrokePanel() {
+    var panel = $('broke-panel');
+    if (!panel) return;
+    var g = S.game;
+    if (!S.brokeSeats || !S.brokeSeats.length) {
+      panel.style.display = 'none';
+      panel.innerHTML = '';
+      // 全部处理完毕后，检查是否仍有 >=2 名活跃玩家
+      var act = 0;
+      for (var a = 0; a < g.n; a++) if (g.chips[a] > 0) act++;
+      if (act < 2) {
+        S.endGame = true;
+        panel.innerHTML = '<div class="broke-title">仅剩 ' + act + ' 名玩家有筹码，练习结束。可点击左上角「新局」重新开始。</div>';
+        panel.style.display = '';
+      } else {
+        S.endGame = false;
+      }
+      return;
+    }
+    var rebuyBB = 200;
+    var rebuyChips = rebuyBB * g.bb;
+    var rows = S.brokeSeats.map(function (seat) {
+      return '<div class="broke-row">' +
+        '<span class="broke-who">' + esc(seatName(seat)) + ' 筹码耗尽</span>' +
+        '<button class="btn rebuy" data-seat="' + seat + '" data-out="0">重新买入 ' + rebuyBB + ' BB（' + rebuyChips + ' 筹码）</button>' +
+        '<button class="btn ghost" data-seat="' + seat + '" data-out="1">不买入（出局）</button>' +
+        '</div>';
+    }).join('');
+    panel.innerHTML = '<div class="broke-title">有玩家筹码已耗尽，请选择处理方式（其他玩家继续）：</div>' + rows;
+    panel.style.display = '';
+
+    var btns = panel.querySelectorAll('button[data-seat]');
+    Array.prototype.forEach.call(btns, function (b) {
+      b.onclick = function () {
+        var seat = Number(b.getAttribute('data-seat'));
+        var out = b.getAttribute('data-out') === '1';
+        if (out) g.chips[seat] = 0;            // 保持 0：下一手被自动排除（出局），其余人继续
+        else g.chips[seat] = rebuyBB * g.bb;   // 重新买入 200 BB
+        var i = S.brokeSeats.indexOf(seat);
+        if (i >= 0) S.brokeSeats.splice(i, 1);
+        saveSession();
+        renderTable();
+        toast(seatName(seat) + (out ? ' 选择不买入，已出局' : ' 重新买入 ' + rebuyBB + ' BB'));
+        renderBrokePanel();
+        renderActions();
+      };
+    });
   }
 
   // 对外暴露只读句柄（供自动化测试与调试排查使用）
