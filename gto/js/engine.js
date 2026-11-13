@@ -270,6 +270,9 @@
       raisesThisStreet: 0,
       lastRaiseTo: this.bb,
       lastActor: null,          // 本街最后行动者；nextActor 从其下家继续
+      lastFullBet: this.bb,     // 本街最后一次「完整下注/加注」达到的金额（翻前大盲即为此）
+      fullRaiseIncrement: this.bb, // 构成完整加注所需的最小增量
+      noRaiseSeats: {},         // 因短码 all-in 而失去本街再加注权的座位
       actions: [],
       result: null
     };
@@ -375,23 +378,30 @@
     var tc = this.toCallFor(seat);
     var stack = c.stacks[seat];
     var out = [];
+    // 短码 all-in 未重开加注权：该座位只能跟注/弃牌（或把不足额筹码全部跟进去）
+    var noRaise = !!(c.noRaiseSeats && c.noRaiseSeats[seat]);
     if (tc > 0) {
       out.push('fold');
       out.push('call');
-      if (stack > tc) out.push('raise');
+      if (stack > tc && !noRaise) out.push('raise');
     } else {
       out.push('check');
-      if (stack > 0) out.push('bet');
+      if (stack > 0 && !noRaise) out.push('bet');
     }
-    if (stack > 0) out.push('allin');
+    // allin 只在「全下不会抬高当前价格」或未被限制时可用
+    if (stack > 0 && (!noRaise || stack <= tc)) out.push('allin');
     return out;
   };
 
   Game.prototype.minRaiseTo = function (seat) {
     var c = this.cur;
     var cb = this.currentBet();
-    var last = c.lastRaiseTo || this.bb;
-    var minTo = last + Math.max(cb - last, this.bb);
+    var inc = c.fullRaiseIncrement || this.bb;
+    // 一个「完整加注」须至少达到：最后一次完整下注额 + 本街完整加注增量。
+    // 短码 all-in 会抬高跟注价，但不改变这个门槛。
+    var minTo = (c.lastFullBet || 0) + inc;
+    // 极端情况（多次短码 all-in 累计使 cb 超过门槛）退化为基于当前价的完整增量
+    if (minTo <= cb) minTo = cb + inc;
     return Math.min(minTo, c.stacks[seat] + c.streetBets[seat]);
   };
 
@@ -572,6 +582,16 @@
     var putIn = 0;
     var actualAction = action;
 
+    // 兜底：本街若出现过「不足最小加注额的短码 all-in」，已行动过的玩家
+    // 加注权未重开，只能跟注/弃牌。即便 UI 或 AI 传来非法加注也在此降级。
+    if (c.noRaiseSeats && c.noRaiseSeats[seat] &&
+        (action === 'raise' || action === 'bet' ||
+         (action === 'allin' && c.stacks[seat] > tc))) {
+      action = tc > 0 ? 'call' : 'check';
+      actualAction = action;      // 复盘记录必须与降级后的实际动作一致
+      size = 0;
+    }
+
     if (action === 'fold') {
       c.folded[seat] = true;
     } else if (action === 'check') {
@@ -587,30 +607,43 @@
         actualAction = 'allin';
         c.allin[seat] = true;
       }
-      if (c.streetBets[seat] + putIn > prevBet) {
-        c.raisesThisStreet++;
-        c.lastRaiseTo = Math.max(c.lastRaiseTo || 0, c.streetBets[seat] + putIn);
-        // 价格变化 → 其他尚未 all-in 的玩家可以重新行动
-        for (var z = 0; z < n; z++) {
-          if (z !== seat && !c.folded[z] && !c.allin[z]) c.acted[z] = false;
-        }
-      }
     } else if (action === 'allin') {
       putIn = c.stacks[seat];
       c.allin[seat] = true;
-      if (putIn + c.streetBets[seat] > prevBet) {
-        c.raisesThisStreet++;
-        c.lastRaiseTo = Math.max(c.lastRaiseTo || 0, putIn + c.streetBets[seat]);
-        for (var z2 = 0; z2 < n; z2++) {
-          if (z2 !== seat && !c.folded[z2] && !c.allin[z2]) c.acted[z2] = false;
-        }
-      }
     }
 
     c.stacks[seat] -= putIn;
     c.streetBets[seat] += putIn;
     c.committed[seat] += putIn;
     c.acted[seat] = true;
+
+    // ===== 统一判定：本次动作是否抬高了本街价格，涨幅是否构成「完整加注」=====
+    // 标准规则：不足一个完整加注增量的 all-in 不重开加注权；本街已行动过的
+    // 玩家面对它只能跟注或弃牌，未行动过的玩家仍可完整加注。
+    var newBet = c.streetBets[seat];
+    if (newBet > prevBet) {
+      var inc = c.fullRaiseIncrement || this.bb;
+      var raiseSize = newBet - (c.lastFullBet || 0);
+      if (raiseSize >= inc || actualAction !== 'allin') {
+        // 完整加注（或普通下注/加注）：重开所有人的加注权
+        c.lastFullBet = newBet;
+        c.fullRaiseIncrement = raiseSize > 0 ? raiseSize : inc;
+        c.raisesThisStreet++;
+        c.lastRaiseTo = newBet;
+        c.noRaiseSeats = {};
+        for (var z = 0; z < n; z++) {
+          if (z !== seat && !c.folded[z] && !c.allin[z]) c.acted[z] = false;
+        }
+      } else {
+        // 不完整加注（短码 all-in）：只给在它之前已行动过的玩家上「禁止再加注」标记。
+        // 不清空 acted —— nextActor 会靠 streetBets < currentBet 让投不足者补差。
+        for (var z2 = 0; z2 < n; z2++) {
+          if (z2 !== seat && !c.folded[z2] && !c.allin[z2] && c.acted[z2]) {
+            c.noRaiseSeats[z2] = true;
+          }
+        }
+      }
+    }
 
     var rec = {
       street: c.street,
@@ -699,6 +732,9 @@
       c.raisesThisStreet = 0;
       c.lastRaiseTo = 0;
       c.lastActor = null;        // 新的一街重新从固定起始座位开始
+      c.lastFullBet = 0;
+      c.fullRaiseIncrement = this.bb;
+      c.noRaiseSeats = {};
       return 'next';
     }
     this.settleUp(false);

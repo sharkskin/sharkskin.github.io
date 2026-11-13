@@ -508,6 +508,13 @@
     var g = S.game, c = g.cur;
     var canAct = !!S.pending && !S.handOver;
     var toCall = c && !c.result ? g.toCallFor(HERO) : 0;
+    // 短码 all-in 未重开加注权时，本轮只允许跟注/弃牌
+    var canRaise = true, canAllin = true;
+    if (canAct) {
+      var legal = g.legalActions(HERO);
+      canRaise = legal.indexOf('raise') >= 0 || legal.indexOf('bet') >= 0;
+      canAllin = legal.indexOf('allin') >= 0;
+    }
 
     // 手牌结束：只保留「下一手」
     if (S.handOver) {
@@ -538,16 +545,24 @@
       chk.className = 'btn check';
     }
     var bet = $('btn-bet');
-    if (S.betMode) {
-      bet.textContent = '确认 ' + (S.betMode === 'raise' ? '加注到 ' : '下注 ') + S.betSize.toFixed(0);
+    if (!canRaise) {
+      S.betMode = null;
+      bet.textContent = '加注权未重开';
+      bet.className = 'btn ghost';
+      bet.title = '已有短码全下（不足最小加注额），本轮只能跟注或弃牌';
     } else {
-      bet.textContent = toCall > 0 ? '加注' : '下注';
+      bet.title = '';
+      if (S.betMode) {
+        bet.textContent = '确认 ' + (S.betMode === 'raise' ? '加注到 ' : '下注 ') + S.betSize.toFixed(0);
+      } else {
+        bet.textContent = toCall > 0 ? '加注' : '下注';
+      }
+      bet.className = 'btn bet';
     }
-    bet.className = 'btn bet';
 
     $('btn-allin').innerHTML = '全下<span class="sub">' + (c ? (c.stacks[HERO] + toCall).toFixed(0) : '') + '</span>';
     $('btn-next').style.display = 'none';
-    $('btn-allin').style.display = (c && c.stacks[HERO] > 0) ? '' : 'none';
+    $('btn-allin').style.display = (c && c.stacks[HERO] > 0 && canAllin) ? '' : 'none';
 
     // 下注面板
     var ui = $('bet-ui');
@@ -566,6 +581,8 @@
     ['btn-fold', 'btn-check', 'btn-bet', 'btn-allin'].forEach(function (id) {
       $(id).disabled = dis;
     });
+    if (!canRaise) $('btn-bet').disabled = true;
+    if (!canAllin) $('btn-allin').disabled = true;
     $('btn-next').disabled = !S.handOver;
     // 有待处理破产玩家或练习已结束（活跃<2）时，禁止直接「下一手」
     if ((S.brokeSeats && S.brokeSeats.length) || S.endGame) $('btn-next').disabled = true;
@@ -1210,6 +1227,8 @@
     $('btn-bet').onclick = function () {
       if (!S.pending) return;
       var g = S.game, c = g.cur;
+      var legal = g.legalActions(HERO);
+      if (legal.indexOf('raise') < 0 && legal.indexOf('bet') < 0) return;
       if (!S.betMode) {
         var toCall = g.toCallFor(HERO);
         S.betMode = toCall > 0 ? 'raise' : 'bet';
@@ -1238,6 +1257,7 @@
     };
     $('btn-allin').onclick = function () {
       if (!S.pending) return;
+      if (S.game.legalActions(HERO).indexOf('allin') < 0) return;
       onHeroAction('allin', 0);
     };
     $('btn-next').onclick = function () {
