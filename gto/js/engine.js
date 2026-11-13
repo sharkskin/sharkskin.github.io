@@ -269,6 +269,7 @@
       posLabel: posLabel,
       raisesThisStreet: 0,
       lastRaiseTo: this.bb,
+      lastActor: null,          // 本街最后行动者；nextActor 从其下家继续
       actions: [],
       result: null
     };
@@ -324,21 +325,47 @@
 
   /** 下一个该行动的座位；返回 null 表示本街结束 */
   Game.prototype.nextActor = function () {
-    var c = this.cur;
+    var c = this.cur, n = this.n;
     var live = this.liveSeats();
     if (live.length <= 1) return null;
 
-    var actable = 0;
-    for (var p = 0; p < live.length; p++) if (!c.allin[live[p]]) actable++;
-    if (actable === 0) return null;
+    // 本街仍可行动的座位（参与本手、未弃牌、未 all-in）
+    var actable = [];
+    var actableCount = 0;
+    for (var p = 0; p < n; p++) {
+      actable[p] = !!c.inHand[p] && !c.folded[p] && !c.allin[p];
+      if (actable[p]) actableCount++;
+    }
+    if (actableCount === 0) return null;
 
-    var order = this.streetOrder();
+    // 兼容旧存档/回放：cur 里没有 lastActor 时，从本街最后一条动作推断
+    var la = c.lastActor;
+    if (la == null || la < 0) {
+      for (var a = c.actions.length - 1; a >= 0; a--) {
+        if (c.actions[a].street === c.street) { la = c.actions[a].seat; break; }
+      }
+    }
+
     var cb = this.currentBet();
-    for (var i = 0; i < order.length; i++) {
-      var s = order[i];
-      if (c.allin[s]) continue;
+    var start;
+    if (la == null || la < 0) {
+      // 本街尚无人行动：从固定起始座位开始（翻前 UTG，翻后按钮后第一位）
+      var order = this.streetOrder();
+      if (!order.length) return null;
+      start = order[0];
+    } else {
+      // 关键：从「上一次行动者的下一位」顺时针继续。
+      // 否则每次加注后都会从本街起点重新扫描，导致加注者的下家之后
+      // 的玩家被跳过、直接把行动权交回给街起点（通常是 HERO）。
+      start = nextFrom(actable, (la + 1) % n);
+      if (start < 0) return null;
+    }
+
+    for (var k = 0; k < n; k++) {
+      var s = (start + k) % n;
+      if (!actable[s]) continue;
       if (c.streetBets[s] < cb) return s;      // 投入不足，必须行动
-      if (!c.acted[s]) return s;               // 投入已平但还没行动过
+      if (!c.acted[s]) return s;               // 投入已平但还没行动过（含大盲 option）
     }
     return null;
   };
@@ -630,6 +657,8 @@
       liveOpponents: st.liveOpponents
     });
 
+    // 记录本街最后行动者，供 nextActor 从其后一位继续
+    c.lastActor = seat;
     this.pending = null;
     return rec;
   };
@@ -669,6 +698,7 @@
       for (var q = 0; q < this.n; q++) { c.streetBets[q] = 0; c.acted[q] = false; }
       c.raisesThisStreet = 0;
       c.lastRaiseTo = 0;
+      c.lastActor = null;        // 新的一街重新从固定起始座位开始
       return 'next';
     }
     this.settleUp(false);
